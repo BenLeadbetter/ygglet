@@ -30,7 +30,9 @@ public:
     };
     static tl::expected<Processor, MakeError> make();
 
-    struct FailedToCreatePerformer {};
+    struct FailedToCreatePerformer
+    {
+    };
     using LoadError = std::variant<cmaj::DiagnosticMessageList, FailedToCreatePerformer>;
     tl::expected<std::monostate, LoadError> load(std::string_view source, std::string_view filename = "");
 

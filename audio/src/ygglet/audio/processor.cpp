@@ -180,7 +180,8 @@ void Processor::process(std::span<std::span<float>> inputs, std::span<std::span<
 
     for (size_t i = 0; i < std::min(inputs.size(), m_inputEndpoints.size()); ++i)
     {
-        auto result = m_performer.setInputFrames(m_inputEndpoints[i], inputs[i].data(), static_cast<uint32_t>(inputs[i].size()));
+        auto result =
+            m_performer.setInputFrames(m_inputEndpoints[i], inputs[i].data(), static_cast<uint32_t>(inputs[i].size()));
         if (result != cmaj::Result::Ok)
         {
             spdlog::error("setInputFrames failed with result: {}", static_cast<int>(result));
@@ -195,7 +196,8 @@ void Processor::process(std::span<std::span<float>> inputs, std::span<std::span<
 
     for (size_t i = 0; i < std::min(outputs.size(), m_outputEndpoints.size()); ++i)
     {
-        auto result = m_performer.copyOutputFrames(m_outputEndpoints[i], outputs[i].data(), static_cast<uint32_t>(outputs[i].size()));
+        auto result = m_performer.copyOutputFrames(m_outputEndpoints[i], outputs[i].data(),
+                                                   static_cast<uint32_t>(outputs[i].size()));
         if (result != cmaj::Result::Ok)
         {
             spdlog::error("copyOutputFrames failed with result: {}", static_cast<int>(result));
