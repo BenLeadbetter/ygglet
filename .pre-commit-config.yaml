@@ -8,3 +8,7 @@ repos:
   rev: v0.6.13
   hooks:
   - id: cmake-format
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.14.10
+  hooks:
+    - id: ruff-format
