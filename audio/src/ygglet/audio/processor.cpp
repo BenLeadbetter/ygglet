@@ -228,7 +228,6 @@ void Processor::cacheEndpoints()
     m_inputEndpoints.clear();
     m_outputEndpoints.clear();
 
-    // Get input endpoints from the engine
     auto inputs = m_engine.getInputEndpoints();
     for (auto& endpoint : inputs.endpoints)
     {
@@ -240,7 +239,6 @@ void Processor::cacheEndpoints()
         }
     }
 
-    // Get output endpoints from the engine
     auto outputs = m_engine.getOutputEndpoints();
     for (auto& endpoint : outputs.endpoints)
     {
