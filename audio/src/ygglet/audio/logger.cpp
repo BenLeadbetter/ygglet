@@ -36,9 +36,9 @@ std::shared_ptr<Logger> Logger::Factory::make()
 
     instance->m_logger->set_level(
 #ifdef NDEBUG
-        spdlog::level::trace
-#else
         spdlog::level::warn
+#else
+        spdlog::level::trace
 #endif
     );
 
