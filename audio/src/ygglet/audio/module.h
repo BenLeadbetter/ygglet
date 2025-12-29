@@ -1,0 +1,18 @@
+#pragma once
+
+#include <memory>
+
+namespace ygglet::audio {
+
+struct Logger;
+
+struct Module
+{
+    static std::shared_ptr<Module> aquire();
+
+private:
+    Module();
+    std::shared_ptr<Logger> m_logger;
+};
+
+} // namespace ygglet::audio

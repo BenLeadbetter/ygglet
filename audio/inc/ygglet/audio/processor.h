@@ -6,6 +6,7 @@
 
 #include <tl/expected.hpp>
 
+#include <memory>
 #include <span>
 #include <string_view>
 #include <variant>
@@ -13,9 +14,10 @@
 
 namespace ygglet::audio {
 
-class Processor
+struct Module;
+
+struct Processor
 {
-public:
     ~Processor();
 
     Processor(const Processor&) = delete;
@@ -55,6 +57,7 @@ private:
     cmaj::Engine m_engine;
     cmaj::Performer m_performer;
     double m_sampleRate = 44100.0;
+    std::shared_ptr<Module> m_module;
     std::vector<cmaj::EndpointHandle> m_inputEndpoints;
     std::vector<cmaj::EndpointHandle> m_outputEndpoints;
     uint32_t m_blockSize = 512;

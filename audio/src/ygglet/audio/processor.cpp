@@ -1,4 +1,5 @@
 #include <ygglet/audio/logger.h>
+#include <ygglet/audio/module.h>
 #include <ygglet/audio/processor.h>
 
 #include <cmajor/API/cmaj_DiagnosticMessages.h>
@@ -76,6 +77,7 @@ tl::expected<Processor, Processor::MakeError> Processor::make()
 {
     auto processor = Processor{};
     processor.m_engine = cmaj::Engine::create();
+    processor.m_module = Module::aquire();
 
     if (!processor.m_engine)
     {
