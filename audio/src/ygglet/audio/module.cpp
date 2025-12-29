@@ -1,3 +1,4 @@
+#include <ygglet/audio/cmajor.h>
 #include <ygglet/audio/logger.h>
 #include <ygglet/audio/module.h>
 
@@ -26,6 +27,12 @@ std::shared_ptr<Module> Module::aquire()
 Module::Module()
 : m_logger(Logger::Factory::make())
 {
+    cmajor::init();
+}
+
+Module::~Module()
+{
+    cmajor::deinit();
 }
 
 } // namespace ygglet::audio

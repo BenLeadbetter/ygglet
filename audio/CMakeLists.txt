@@ -5,6 +5,8 @@ find_package(tl-expected REQUIRED)
 
 set(YGGLET_AUDIO_SOURCES
     # cmake-format: sortable
+    ./src/ygglet/audio/cmajor.cpp
+    ./src/ygglet/audio/cmajor.h
     ./inc/ygglet/audio/processor.h
     ./src/ygglet/audio/processor.cpp
     ./src/ygglet/audio/logger.cpp

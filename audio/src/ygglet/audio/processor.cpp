@@ -4,8 +4,6 @@
 
 #include <cmajor/API/cmaj_DiagnosticMessages.h>
 #include <cmajor/API/cmaj_Endpoints.h>
-#include <cmajor/COM/cmaj_Library.h>
-
 
 #include <boost/assert.hpp>
 #include <boost/container/flat_map.hpp>
@@ -16,30 +14,6 @@
 namespace ygglet::audio {
 
 namespace {
-
-struct LibraryInitializer
-{
-    LibraryInitializer()
-    {
-        if constexpr (cmaj::Library::isUsingDLL)
-        {
-            // Try to find the DLL in the library search paths
-            // The name is platform-specific (libCmajPerformer.dylib on macOS, etc.)
-            std::string dllName = cmaj::Library::getDLLName();
-
-            // On macOS with conan, the library should be in the RPATH
-            // We can just pass the name and let the system find it
-            if (!cmaj::Library::initialise(dllName))
-            {
-                // If that doesn't work, it might need an absolute path
-                // which would be set up by CMake
-            }
-        }
-    }
-    ~LibraryInitializer() { cmaj::Library::shutdown(); }
-};
-
-static LibraryInitializer libraryInit;
 
 void logDiagnostics(const auto& messages)
 {
@@ -76,8 +50,8 @@ void logDiagnostics(const auto& messages)
 tl::expected<Processor, Processor::MakeError> Processor::make()
 {
     auto processor = Processor{};
-    processor.m_engine = cmaj::Engine::create();
     processor.m_module = Module::aquire();
+    processor.m_engine = cmaj::Engine::create();
 
     if (!processor.m_engine)
     {

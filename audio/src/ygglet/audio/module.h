@@ -9,6 +9,7 @@ struct Logger;
 struct Module
 {
     static std::shared_ptr<Module> aquire();
+    ~Module();
 
 private:
     Module();
