@@ -1,7 +1,9 @@
 from conan import ConanFile
+from conan.tools.cmake import CMakeToolchain, CMakeDeps
+import os
 
 
-class MyProjectConan(ConanFile):
+class YggletConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     requires = (
         "boost/1.90.0",
@@ -10,4 +12,10 @@ class MyProjectConan(ConanFile):
         "spdlog/1.16.0",
         "tl-expected/20190710",
     )
-    generators = ("CMakeToolchain", "CMakeDeps")
+
+    def generate(self):
+        tc = CMakeToolchain(self, generator=os.environ.get("CMAKE_GENERATOR"))
+        tc.generate()
+
+        deps = CMakeDeps(self)
+        deps.generate()
