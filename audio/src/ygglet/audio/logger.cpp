@@ -23,16 +23,16 @@ std::shared_ptr<Logger> Logger::Factory::make()
 
     auto instance = std::shared_ptr<Logger>(new Logger);
 
-    instance->m_logger = std::make_unique<spdlog::logger>("ygglet", spdlog::sinks_init_list{
+    instance->m_logger =
+        std::make_unique<spdlog::logger>("ygglet.audio", spdlog::sinks_init_list{
 #if BOOST_OS_WINDOWS
-                                                                        std::make_shared<spdlog::sinks::msvc_sink_mt>(),
+                                                             std::make_shared<spdlog::sinks::msvc_sink_mt>(),
 #else
-                                                                        std::make_shared<
-                                                                            spdlog::sinks::stdout_color_sink_mt>(),
-                                                                        std::make_shared<spdlog::sinks::syslog_sink_mt>(
-                                                                            "ygglet", 0, LOG_USER, true),
+                                                             std::make_shared<spdlog::sinks::stdout_color_sink_mt>(),
+                                                             std::make_shared<spdlog::sinks::syslog_sink_mt>(
+                                                                 "ygglet", 0, LOG_USER, true),
 #endif
-                                                                    });
+                                                         });
 
     instance->m_logger->set_level(
 #ifdef NDEBUG
