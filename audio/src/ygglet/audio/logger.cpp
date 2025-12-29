@@ -20,7 +20,9 @@ std::weak_ptr<Logger> Logger::s_instance = {};
 std::shared_ptr<Logger> Logger::Factory::make()
 {
     BOOST_ASSERT_MSG(!s_instance.lock(), "Only one instance per process");
+
     auto instance = std::shared_ptr<Logger>(new Logger);
+
     instance->m_logger = std::make_unique<spdlog::logger>("ygglet", spdlog::sinks_init_list{
 #if BOOST_OS_WINDOWS
                                                                         std::make_shared<spdlog::sinks::msvc_sink_mt>(),
@@ -31,7 +33,17 @@ std::shared_ptr<Logger> Logger::Factory::make()
                                                                             "ygglet", 0, LOG_USER, true),
 #endif
                                                                     });
+
+    instance->m_logger->set_level(
+#ifdef NDEBUG
+        spdlog::level::trace
+#else
+        spdlog::level::warn
+#endif
+    );
+
     Logger::s_instance = instance;
+
     return instance;
 }
 

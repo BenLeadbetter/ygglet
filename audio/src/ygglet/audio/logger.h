@@ -47,7 +47,7 @@ struct Logger
 
     template <typename... Args> static void error(const spdlog::format_string_t<Args...>& fmt, Args&&... args)
     {
-        log<spdlog::level::debug>(fmt, std::forward<Args>(args)...);
+        log<spdlog::level::err>(fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args> static void critical(const spdlog::format_string_t<Args...>& fmt, Args&&... args)
