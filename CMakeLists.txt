@@ -25,3 +25,6 @@ set(CXX_STANDARD 20)
 
 add_subdirectory(engine)
 add_subdirectory(processor)
+add_subdirectory(core)
+add_subdirectory(instance)
+add_subdirectory(clap)

@@ -26,6 +26,7 @@ repos:
     rev: "v21.1.8"
     hooks:
       - id: clang-format
+        types: [c, c++]
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.18.1
     hooks:
