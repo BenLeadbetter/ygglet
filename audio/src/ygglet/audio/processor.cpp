@@ -1,10 +1,10 @@
+#include <ygglet/audio/logger.h>
 #include <ygglet/audio/processor.h>
 
 #include <cmajor/API/cmaj_DiagnosticMessages.h>
 #include <cmajor/API/cmaj_Endpoints.h>
 #include <cmajor/COM/cmaj_Library.h>
 
-#include <spdlog/spdlog.h>
 
 #include <boost/assert.hpp>
 #include <boost/container/flat_map.hpp>
@@ -49,14 +49,14 @@ void logDiagnostics(const auto& messages)
         {
             case Type::error:
             case Type::internalCompilerError:
-                spdlog::error("[{}] {}", message.getCategory(), message.getFullDescription());
+                Logger::error("[{}] {}", message.getCategory(), message.getFullDescription());
                 break;
             case Type::warning:
-                spdlog::warn("[{}] {}", message.getCategory(), message.getFullDescription(),
+                Logger::warn("[{}] {}", message.getCategory(), message.getFullDescription(),
                              message.getAnnotatedSourceLine());
                 break;
             case Type::note:
-                spdlog::info("[{}] {}", message.getCategory(), message.getFullDescription(),
+                Logger::info("[{}] {}", message.getCategory(), message.getFullDescription(),
                              message.getAnnotatedSourceLine());
                 break;
             default:
@@ -65,7 +65,7 @@ void logDiagnostics(const auto& messages)
         }
         if (auto location = message.getAnnotatedSourceLine(); !location.empty())
         {
-            spdlog::info(location);
+            Logger::info("{}", location);
         }
     }
 };
@@ -162,7 +162,7 @@ void Processor::setBlockSize(uint32_t blockSize)
         auto result = m_performer.setBlockSize(blockSize);
         if (result != cmaj::Result::Ok)
         {
-            spdlog::error("Failed to set performer block size. Result: {}", static_cast<int>(result));
+            Logger::error("Failed to set performer block size. Result: {}", static_cast<int>(result));
         }
     }
 }
@@ -184,14 +184,14 @@ void Processor::process(std::span<std::span<float>> inputs, std::span<std::span<
             m_performer.setInputFrames(m_inputEndpoints[i], inputs[i].data(), static_cast<uint32_t>(inputs[i].size()));
         if (result != cmaj::Result::Ok)
         {
-            spdlog::error("setInputFrames failed with result: {}", static_cast<int>(result));
+            Logger::error("setInputFrames failed with result: {}", static_cast<int>(result));
         }
     }
 
     auto advanceResult = m_performer.advance();
     if (advanceResult != cmaj::Result::Ok)
     {
-        spdlog::error("advance() failed with result: {}", static_cast<int>(advanceResult));
+        Logger::error("advance() failed with result: {}", static_cast<int>(advanceResult));
     }
 
     for (size_t i = 0; i < std::min(outputs.size(), m_outputEndpoints.size()); ++i)
@@ -200,7 +200,7 @@ void Processor::process(std::span<std::span<float>> inputs, std::span<std::span<
                                                    static_cast<uint32_t>(outputs[i].size()));
         if (result != cmaj::Result::Ok)
         {
-            spdlog::error("copyOutputFrames failed with result: {}", static_cast<int>(result));
+            Logger::error("copyOutputFrames failed with result: {}", static_cast<int>(result));
         }
     }
 }
