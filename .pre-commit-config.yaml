@@ -1,9 +1,19 @@
 repos:
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
     hooks:
-      - id: conventional-pre-commit
-        stages: [commit-msg]
+      - id: check-yaml
+        stages: [pre-commit]
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-illegal-windows-names
+      - id: trailing-whitespace
+        exclude_types: [c++, c] # handled by clang-format
+      - id: mixed-line-ending
+        args: [--fix=auto]
+        stages: [pre-commit]
+      - id: check-merge-conflict
+        stages: [pre-commit]
   - repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
     hooks:
@@ -16,3 +26,7 @@ repos:
     rev: "v21.1.8"
     hooks:
       - id: clang-format
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.18.1
+    hooks:
+      - id: markdownlint-cli2
