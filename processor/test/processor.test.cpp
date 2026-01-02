@@ -1,4 +1,4 @@
-#include <ygglet/audio/processor.h>
+#include <ygglet/audio/processor.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>

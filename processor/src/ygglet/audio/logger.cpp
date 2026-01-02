@@ -1,4 +1,4 @@
-#include <ygglet/audio/logger.h>
+#include <ygglet/audio/logger.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/predef/os.h>

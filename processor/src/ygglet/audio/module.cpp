@@ -1,6 +1,6 @@
-#include <ygglet/audio/cmajor.h>
-#include <ygglet/audio/logger.h>
-#include <ygglet/audio/module.h>
+#include <ygglet/audio/cmajor.hpp>
+#include <ygglet/audio/logger.hpp>
+#include <ygglet/audio/module.hpp>
 
 #include <mutex>
 
