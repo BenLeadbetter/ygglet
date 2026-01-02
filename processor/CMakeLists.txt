@@ -3,7 +3,7 @@ find_package(cmajor REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(tl-expected REQUIRED)
 
-set(YGGLET_AUDIO_SOURCES
+set(YGGLET_PROCESSOR_SOURCES
     # cmake-format: sortable
     ./src/ygglet/audio/cmajor.cpp
     ./src/ygglet/audio/cmajor.h
@@ -14,13 +14,13 @@ set(YGGLET_AUDIO_SOURCES
     ./src/ygglet/audio/module.cpp
     ./src/ygglet/audio/module.h)
 
-add_library(ygglet-audio ${YGGLET_AUDIO_SOURCES})
+add_library(ygglet-processor ${YGGLET_PROCESSOR_SOURCES})
 
-target_include_directories(ygglet-audio PUBLIC inc)
-target_include_directories(ygglet-audio PRIVATE src)
+target_include_directories(ygglet-processor PUBLIC inc)
+target_include_directories(ygglet-processor PRIVATE src)
 
-target_link_libraries(ygglet-audio PUBLIC cmajor::cmajor tl::expected)
-target_link_libraries(ygglet-audio PRIVATE spdlog::spdlog Boost::headers)
+target_link_libraries(ygglet-processor PUBLIC cmajor::cmajor tl::expected)
+target_link_libraries(ygglet-processor PRIVATE spdlog::spdlog Boost::headers)
 
 if(YGGLET_TESTS)
   add_subdirectory(test)

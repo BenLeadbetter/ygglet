@@ -12,7 +12,7 @@
 #include <variant>
 #include <vector>
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 struct Module;
 
@@ -63,4 +63,4 @@ private:
     uint32_t m_blockSize = 512;
 };
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor

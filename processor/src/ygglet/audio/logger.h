@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 class Module;
 
@@ -61,4 +61,4 @@ private:
     std::unique_ptr<spdlog::logger> m_logger{};
 };
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor

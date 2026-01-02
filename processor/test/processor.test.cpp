@@ -3,7 +3,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-namespace ygglet::audio::test {
+namespace ygglet::processor::test {
 
 SCENARIO("Creating a processor, loading patches and processing audio", "[processor]")
 {
@@ -142,4 +142,4 @@ SCENARIO("Creating a processor, loading patches and processing audio", "[process
     }
 }
 
-} // namespace ygglet::audio::test
+} // namespace ygglet::processor::test

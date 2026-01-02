@@ -11,7 +11,7 @@
 #include <spdlog/sinks/syslog_sink.h>
 #endif
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 Logger::Logger() = default;
 
@@ -47,4 +47,4 @@ std::shared_ptr<Logger> Logger::Factory::make()
     return instance;
 }
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor

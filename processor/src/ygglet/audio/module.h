@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 struct Logger;
 
@@ -16,4 +16,4 @@ private:
     std::shared_ptr<Logger> m_logger;
 };
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor

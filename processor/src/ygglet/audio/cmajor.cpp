@@ -1,6 +1,6 @@
 #include <cmajor/COM/cmaj_Library.h>
 
-namespace ygglet::audio::cmajor {
+namespace ygglet::processor::cmajor {
 
 void init()
 {
@@ -24,4 +24,4 @@ void deinit()
     cmaj::Library::shutdown();
 }
 
-} // namespace ygglet::audio::cmajor
+} // namespace ygglet::processor::cmajor

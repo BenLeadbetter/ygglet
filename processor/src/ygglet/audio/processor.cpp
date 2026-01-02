@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 namespace {
 
@@ -227,4 +227,4 @@ void Processor::cacheEndpoints()
     }
 }
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor

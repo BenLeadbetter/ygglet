@@ -23,4 +23,4 @@ setup_corrosion()
 
 set(CXX_STANDARD 20)
 
-add_subdirectory(audio)
+add_subdirectory(processor)

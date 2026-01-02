@@ -4,7 +4,7 @@
 
 #include <mutex>
 
-namespace ygglet::audio {
+namespace ygglet::processor {
 
 std::shared_ptr<Module> Module::aquire()
 {
@@ -35,4 +35,4 @@ Module::~Module()
     cmajor::deinit();
 }
 
-} // namespace ygglet::audio
+} // namespace ygglet::processor
