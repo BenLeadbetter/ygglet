@@ -1,6 +1,6 @@
-#include <ygglet/audio/logger.hpp>
-#include <ygglet/audio/module.hpp>
-#include <ygglet/audio/processor.hpp>
+#include <ygglet/processor/logger.hpp>
+#include <ygglet/processor/module.hpp>
+#include <ygglet/processor/processor.hpp>
 
 #include <cmajor/API/cmaj_DiagnosticMessages.h>
 #include <cmajor/API/cmaj_Endpoints.h>
