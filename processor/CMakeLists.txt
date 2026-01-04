@@ -1,5 +1,6 @@
 find_package(boost REQUIRED)
 find_package(cmajor REQUIRED)
+find_package(foonathan_memory REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(strong_type REQUIRED)
 find_package(tl-expected REQUIRED)
@@ -29,7 +30,8 @@ target_include_directories(ygglet-processor PRIVATE src)
 
 set(PROCESSOR_PUBLIC_LIBS
     # cmake-format: sortable
-    Boost::headers cmajor::cmajor rollbear::strong_type tl::expected)
+    Boost::headers cmajor::cmajor foonathan_memory rollbear::strong_type
+    tl::expected)
 set(PROCESSOR_PRIVATE_LIBS # cmake-format: sortable
                            spdlog::spdlog)
 target_link_libraries(ygglet-processor PUBLIC ${PROCESSOR_PUBLIC_LIBS})

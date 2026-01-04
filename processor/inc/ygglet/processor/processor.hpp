@@ -25,10 +25,11 @@ struct Processor
     uint32_t getBlockSize() const;
 
 private:
+    double m_sampleRate{44100.0};
+    uint32_t m_blockSize{512};
+
     Graph m_graph;
     std::shared_ptr<Module> m_module;
-    double m_sampleRate = 44100.0;
-    uint32_t m_blockSize = 512;
 };
 
 } // namespace ygglet::processor

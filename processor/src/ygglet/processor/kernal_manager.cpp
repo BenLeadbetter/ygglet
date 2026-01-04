@@ -72,7 +72,7 @@ std::optional<std::shared_ptr<Kernal>> KernalManager::aquire(const Patch& patch)
     return aquire(hash(patch));
 }
 
-tl::expected<std::pair<KernalManager::Key, std::shared_ptr<Kernal>>, engine_manager::Error>
+tl::expected<std::pair<KernalManager::Key, std::shared_ptr<Kernal>>, kernal_manager::Error>
 KernalManager::load(Patch patch)
 {
     auto engine = std::make_shared<Kernal>();
@@ -80,7 +80,7 @@ KernalManager::load(Patch patch)
 
     if (!engine)
     {
-        return tl::unexpected{engine_manager::FailedToCreateEngine{}};
+        return tl::unexpected{kernal_manager::FailedToCreateEngine{}};
     }
 
     cmaj::Program program;
@@ -147,7 +147,11 @@ KernalManager::load(Patch patch)
     }
 
     const auto key = hash(patch);
-    m_cache.insert(std::make_pair(key, std::weak_ptr{engine}));
+
+    {
+        const auto lock = std::lock_guard(m_mutex);
+        m_cache.insert(std::make_pair(key, std::weak_ptr{engine}));
+    }
 
     return std::make_pair(key, std::move(engine));
 }

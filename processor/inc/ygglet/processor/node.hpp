@@ -1,49 +1,37 @@
 #pragma once
 
-#include <cmajor/API/cmaj_Engine.h>
 #include <cmajor/API/cmaj_Performer.h>
-#include <cmajor/API/cmaj_Program.h>
 
 #include <boost/uuid/uuid.hpp>
 
-#include <tl/expected.hpp>
+#include <span>
 
 namespace ygglet::processor {
 
 struct Graph;
+struct Kernal;
 
 struct Node
 {
-    void process();
-
-    std::uint32_t numberOfInputs() const;
-    std::uint32_t numberOfOutputs() const;
+    Node(std::shared_ptr<Kernal>);
 
     boost::uuids::uuid id() const;
-    boost::uuids::uuid input(std::uint32_t) const;
-    boost::uuids::uuid output(std::uint32_t) const;
+    std::span<const boost::uuids::uuid> inputs() const;
+    std::span<const boost::uuids::uuid> outputs() const;
 
 private:
     friend class Graph;
-    friend class NodeBuilder;
 
-    double m_sampleRate = 44100.0;
-    std::uint32_t m_blockSize = 512;
+    boost::uuids::uuid m_id;
 
-    cmaj::Engine m_engine;
+    std::shared_ptr<Kernal> m_kernal;
     cmaj::Performer m_performer;
 
-    struct Endpoint
-    {
-        cmaj::EndpointHandle handle;
-        boost::uuids::uuid id;
-    };
-    using Endpoints = std::vector<Endpoint>;
-    struct
-    {
-        Endpoints inputs;
-        Endpoints ouputs;
-    } m_endpoints;
+    std::vector<std::vector<float>> m_buffers{};
+
+    using Endpoints = std::vector<boost::uuids::uuid>;
+    Endpoints m_inputs;
+    Endpoints m_outputs;
 };
 
 } // namespace ygglet::processor

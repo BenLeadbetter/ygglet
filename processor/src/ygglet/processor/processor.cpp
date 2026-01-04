@@ -13,6 +13,7 @@ namespace ygglet::processor {
 
 Processor::Processor()
 : m_module(Module::aquire())
+, m_graph(m_sampleRate, m_blockSize)
 {
 }
 

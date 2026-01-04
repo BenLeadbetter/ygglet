@@ -9,7 +9,7 @@ class YggletConan(ConanFile):
         "boost/1.90.0",
         "catch2/3.11.0",
         "cmajor/1.0.3088",
-        # "foonathan-memory/0.7.3",
+        "foonathan-memory/0.7.3",
         "spdlog/1.16.0",
         "tl-expected/20190710",
         "strong_type/v9",
