@@ -1,17 +1,16 @@
 #pragma once
 
 #include <ygglet/engine/detail/connections.hpp>
+#include <ygglet/engine/detail/control_graph.hpp>
 #include <ygglet/engine/detail/endpoints.hpp>
 #include <ygglet/engine/detail/nodes.hpp>
+#include <ygglet/engine/detail/render_graph.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/uuid/uuid.hpp>
 
-#include <array>
-#include <atomic>
 #include <span>
-#include <vector>
 
 namespace ygglet::engine {
 
@@ -26,39 +25,6 @@ template <typename> struct Connections;
 template <typename> struct Inputs;
 template <typename> struct Nodes;
 template <typename> struct Outputs;
-
-struct ControlGraph
-{
-    using Endpoints = std::vector<boost::uuids::uuid>;
-    using Nodes = boost::container::flat_map<boost::uuids::uuid, std::unique_ptr<Node>>;
-    using Connections = boost::container::flat_map<boost::uuids::uuid, Connection>;
-    Endpoints inputs;
-    Endpoints outputs;
-    Nodes nodes;
-    Connections connections;
-};
-
-struct RenderGraph
-{
-    struct Node
-    {
-        engine::Node* node;
-        std::vector<std::span<const float>> inputs;
-    };
-    struct Graph
-    {
-        std::vector<Node> nodes;
-        std::vector<std::span<const float>*> inputs;
-        std::vector<std::span<float>*> outputs;
-        std::vector<float> silence;
-    };
-    std::atomic<std::uint32_t> index{};
-    std::array<Graph, 2> buffers{};
-
-    Graph& current();
-    Graph& inactive();
-    void publish();
-};
 
 } // namespace detail
 
