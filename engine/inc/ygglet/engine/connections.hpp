@@ -1,15 +1,13 @@
 #pragma once
 
+#include <ygglet/engine/connection.hpp>
+
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/uuid/uuid.hpp>
 
-namespace ygglet::processor {
-struct Connection;
-} // namespace ygglet::processor
+namespace ygglet::engine {
 
-namespace ygglet::processor::graph {
-
-template <typename G> struct Connections
+template <typename E> struct Connections
 {
     struct iterator : public boost::iterator_facade<iterator, Connection, boost::random_access_traversal_tag>
     {
@@ -18,7 +16,7 @@ template <typename G> struct Connections
     private:
         friend class boost::iterator_core_access;
         friend struct Connections;
-        using UnderlyingIterator = decltype(std::declval<G&>().m_graph.control.connections.begin());
+        using UnderlyingIterator = decltype(std::declval<E&>().m_graph.control.connections.begin());
         iterator(UnderlyingIterator itr)
         : m_itr(itr)
         {
@@ -34,21 +32,34 @@ template <typename G> struct Connections
 
     using const_iterator = iterator;
 
-    iterator begin() { return iterator(m_graph.m_graph.control.connections.begin()); }
-    iterator end() { return iterator(m_graph.m_graph.control.connections.end()); }
+    // TODO: transitions
+    void insert(const Connection& connection)
+        requires(!std::is_const_v<E>)
+    {
+        m_engine.m_graph.control.connections.insert(connection);
+    }
+
+    void remove(const Connection& connection)
+        requires(!std::is_const_v<E>)
+    {
+        m_engine.m_graph.control.connections.erase(connection);
+    }
+
+    iterator begin() { return iterator(m_engine.m_graph.control.connections.begin()); }
+    iterator end() { return iterator(m_engine.m_graph.control.connections.end()); }
 
     const_iterator begin() const { return begin(); }
     const_iterator end() const { return end(); }
 
 private:
-    friend G;
+    friend E;
 
-    Connections(G& graph)
-    : m_graph(graph)
+    Connections(E& engine)
+    : m_engine(engine)
     {
     }
 
-    G& m_graph;
+    E& m_engine;
 };
 
-} // namespace ygglet::processor::graph
+} // namespace ygglet::engine

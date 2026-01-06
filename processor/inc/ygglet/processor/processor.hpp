@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ygglet/processor/graph.hpp>
+#include <ygglet/engine/engine.hpp>
 
 #include <memory>
 
@@ -28,7 +28,7 @@ private:
     double m_sampleRate{44100.0};
     uint32_t m_blockSize{512};
 
-    Graph m_graph;
+    engine::Engine m_graph;
     std::shared_ptr<Module> m_module;
 };
 

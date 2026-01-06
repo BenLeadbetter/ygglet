@@ -1,17 +1,13 @@
 #pragma once
 
-#include <ygglet/processor/node.hpp>
+#include <ygglet/engine/node.hpp>
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/uuid/uuid.hpp>
 
 #include <memory>
 
-namespace ygglet::processor {
-struct Node;
-} // namespace ygglet::processor
-
-namespace ygglet::processor::graph {
+namespace ygglet::engine {
 
 template <typename G> struct Nodes
 {
@@ -38,8 +34,8 @@ template <typename G> struct Nodes
 
     using const_iterator = iterator;
 
-    iterator begin() { return iterator(m_graph.m_graph.control.nodes.begin()); }
-    iterator end() { return iterator(m_graph.m_graph.control.nodes.end()); }
+    iterator begin() { return iterator(m_engine.m_graph.control.nodes.begin()); }
+    iterator end() { return iterator(m_engine.m_graph.control.nodes.end()); }
 
     const_iterator begin() const { return begin(); }
     const_iterator end() const { return end(); }
@@ -47,8 +43,16 @@ template <typename G> struct Nodes
     void insert(std::unique_ptr<Node> node)
         requires(!std::is_const_v<G>)
     {
+        // allocate buffers
+        auto& buffers = G::buffers(*node);
+        buffers.resize(node->outputs().size());
+        for (auto& buffer : buffers)
+        {
+            buffer = std::vector<float>(m_engine.m_blockSize, 0.0f);
+        }
+
         auto id = node->id();
-        m_graph.m_graph.control.nodes.insert({id, std::move(node)});
+        m_engine.m_graph.control.nodes.insert({id, std::move(node)});
     }
 
     void remove(boost::uuids::uuid id)
@@ -62,26 +66,26 @@ template <typename G> struct Nodes
     Node& operator[](boost::uuids::uuid id)
         requires(!std::is_const_v<G>)
     {
-        return *m_graph.m_graph.control.nodes[id];
+        return *m_engine.m_graph.control.nodes[id];
     }
 
     const Node& operator[](boost::uuids::uuid id) const
     {
-        auto itr = m_graph.m_graph.control.nodes.find(id);
+        auto itr = m_engine.m_graph.control.nodes.find(id);
         return *itr->second;
     }
 
-    iterator find(boost::uuids::uuid id) { return iterator{m_graph.m_graph.control.nodes.find(id)}; }
+    iterator find(boost::uuids::uuid id) { return iterator{m_engine.m_graph.control.nodes.find(id)}; }
 
 private:
     friend G;
 
-    Nodes(G& graph)
-    : m_graph(graph)
+    Nodes(G& engine)
+    : m_engine(engine)
     {
     }
 
-    G& m_graph;
+    G& m_engine;
 };
 
-} // namespace ygglet::processor::graph
+} // namespace ygglet::engine

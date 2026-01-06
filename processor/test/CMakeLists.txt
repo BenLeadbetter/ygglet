@@ -1,12 +1,9 @@
 find_package(Catch2 REQUIRED)
 
-set(YGGLET_AUDIO_TEST_SOURCES
-    # cmake-format: sortable
-    graph.test.cpp
-    # processor.test.cpp
+set(PROCESSOR_TEST_SOURCES # cmake-format: sortable processor.test.cpp
     kernal_manager.test.cpp)
 
-add_executable(ygglet-processor-tests ${YGGLET_AUDIO_TEST_SOURCES})
+add_executable(ygglet-processor-tests ${PROCESSOR_TEST_SOURCES})
 
 target_link_libraries(ygglet-processor-tests PRIVATE ygglet-processor
                                                      Catch2::Catch2WithMain)

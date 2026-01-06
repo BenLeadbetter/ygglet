@@ -23,4 +23,5 @@ setup_corrosion()
 
 set(CXX_STANDARD 20)
 
+add_subdirectory(engine)
 add_subdirectory(processor)

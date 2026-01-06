@@ -2,36 +2,58 @@
 #include <ygglet/processor/logger.hpp>
 #include <ygglet/processor/node.hpp>
 
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/uuid/generators.hpp>
+#include <boost/assert.hpp>
 
 namespace ygglet::processor {
 
 Node::Node(std::shared_ptr<Kernal> kernal)
-: m_id(boost::uuids::random_generator{}())
+: engine::Node(kernal->inputs.size(), kernal->outputs.size())
 , m_kernal(std::move(kernal))
 , m_performer(m_kernal->engine.createPerformer())
 {
-    auto uuids = boost::adaptors::transformed([](auto&&) {
-        return boost::uuids::random_generator{}();
-    });
-    m_inputs = boost::copy_range<Endpoints>(m_kernal->inputs | uuids);
-    m_inputs = boost::copy_range<Endpoints>(m_kernal->outputs | uuids);
 }
 
-boost::uuids::uuid Node::id() const
+void Node::process(std::span<std::span<const float>> inputs)
 {
-    return m_id;
-}
+    BOOST_ASSERT_MSG(m_performer, "Expected a valid performer instance");
 
-std::span<const boost::uuids::uuid> Node::inputs() const
-{
-    return m_inputs;
-}
+    if (inputs.size() != m_kernal->inputs.size())
+    {
+        Logger::error("Incorrect number of input buffers");
+        for (auto output : buffers())
+        {
+            std::ranges::fill(output, 0.0f);
+        }
+        return;
+    }
 
-std::span<const boost::uuids::uuid> Node::outputs() const
-{
-    return m_outputs;
+    for (size_t i = 0; i < inputs.size(); ++i)
+    {
+        auto result =
+            m_performer.setInputFrames(m_kernal->inputs[i], inputs[i].data(), static_cast<uint32_t>(inputs[i].size()));
+        if (result != cmaj::Result::Ok)
+        {
+            Logger::error("setInputFrames failed with result: {}", static_cast<int>(result));
+        }
+    }
+
+    auto advanceResult = m_performer.advance();
+    if (advanceResult != cmaj::Result::Ok)
+    {
+        Logger::error("advance() failed with result: {}", static_cast<int>(advanceResult));
+    }
+
+    BOOST_ASSERT_MSG(buffers().size() == m_kernal->outputs.size(), "Incorrect number of output buffers");
+
+    for (size_t i = 0; i < buffers().size(); ++i)
+    {
+        auto result = m_performer.copyOutputFrames(m_kernal->outputs[i], buffers()[i].data(),
+                                                   static_cast<uint32_t>(buffers()[i].size()));
+        if (result != cmaj::Result::Ok)
+        {
+            Logger::error("copyOutputFrames failed with result: {}", static_cast<int>(result));
+        }
+    }
 }
 
 } // namespace ygglet::processor
