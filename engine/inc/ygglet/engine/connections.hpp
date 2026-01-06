@@ -3,6 +3,7 @@
 #include <ygglet/engine/connection.hpp>
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/uuid/generators.hpp>
 #include <boost/uuid/uuid.hpp>
 
 namespace ygglet::engine {
@@ -16,12 +17,12 @@ template <typename E> struct Connections
     private:
         friend class boost::iterator_core_access;
         friend struct Connections;
-        using UnderlyingIterator = decltype(std::declval<E&>().m_graph.control.connections.begin());
+        using UnderlyingIterator = decltype(std::declval<E&>().m_control.connections.begin());
         iterator(UnderlyingIterator itr)
         : m_itr(itr)
         {
         }
-        Connection& dereference() const { return *m_itr; }
+        Connection& dereference() const { return m_itr->second; }
         void increment() { ++m_itr; }
         void decrement() { --m_itr; }
         void advance(std::ptrdiff_t n) { m_itr += n; }
@@ -32,24 +33,33 @@ template <typename E> struct Connections
 
     using const_iterator = iterator;
 
+    iterator begin() { return iterator(m_engine.m_control.connections.begin()); }
+    iterator end() { return iterator(m_engine.m_control.connections.end()); }
+
+    const_iterator begin() const { return iterator(m_engine.m_control.connections.begin()); }
+    const_iterator end() const { return iterator(m_engine.m_control.connections.end()); }
+
+    iterator find(boost::uuids::uuid id) { return m_engine.m_control.connections.find(id); }
+
     // TODO: transitions
-    void insert(const Connection& connection)
+    boost::uuids::uuid insert(const Connection& connection)
         requires(!std::is_const_v<E>)
     {
-        m_engine.m_graph.control.connections.insert(connection);
+        boost::uuids::uuid id = boost::uuids::random_generator{}();
+        m_engine.m_control.connections.insert({id, connection});
+        return id;
     }
 
-    void remove(const Connection& connection)
+    // TODO: transitions
+    void remove(boost::uuids::uuid id)
         requires(!std::is_const_v<E>)
     {
-        m_engine.m_graph.control.connections.erase(connection);
+        m_engine.m_control.connections.erase(id);
     }
 
-    iterator begin() { return iterator(m_engine.m_graph.control.connections.begin()); }
-    iterator end() { return iterator(m_engine.m_graph.control.connections.end()); }
+    std::size_t size() const { return m_engine.m_control.connections.size(); }
 
-    const_iterator begin() const { return begin(); }
-    const_iterator end() const { return end(); }
+    bool empty() const { return m_engine.m_control.connections.empty(); }
 
 private:
     friend E;

@@ -9,7 +9,24 @@
 
 #include <boost/uuid/generators.hpp>
 
+#include <algorithm>
+
 namespace ygglet::engine::test {
+
+struct BasicNode : Node
+{
+    BasicNode()
+    : Node(3, 2)
+    {
+    }
+
+    void process(std::span<std::span<const float>> inputs) override
+    {
+        REQUIRE(inputs.size() == 3);
+        REQUIRE(buffers().size() == 2);
+        // do nothing
+    }
+};
 
 struct PassthroughNode : Node
 {
@@ -23,8 +40,45 @@ struct PassthroughNode : Node
         REQUIRE(inputs.size() == 1);
         REQUIRE(buffers().size() == 1);
         REQUIRE(inputs[0].size() == buffers()[0].size());
-        std::memcpy(buffers()[0].data(), inputs[0].data(), inputs[0].size());
+        std::memcpy(buffers()[0].data(), inputs[0].data(), inputs[0].size() * sizeof(float));
     }
+};
+
+struct ConstantSignalNode : Node
+{
+    ConstantSignalNode(float v)
+    : Node(1, 1)
+    , v(v)
+    {
+    }
+
+    void process(std::span<std::span<const float>>) override
+    {
+        REQUIRE(buffers().size() == 1);
+        std::ranges::fill(buffers()[0], v);
+    }
+
+    float v{0.0f};
+};
+
+struct MultiplyNode : Node
+{
+    MultiplyNode(float m)
+    : Node(1, 1)
+    , m(m)
+    {
+    }
+
+    void process(std::span<std::span<const float>>) override
+    {
+        REQUIRE(buffers().size() == 1);
+        for (auto& v : buffers()[0])
+        {
+            v *= m;
+        }
+    }
+
+    float m{1.0f};
 };
 
 SCENARIO("Mutating an audio engine", "[engine]")
@@ -44,30 +98,69 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
         THEN("contains no nodes")
         {
-            CHECK(std::distance(engine.nodes().begin(), engine.nodes().end()) == 0);
+            CHECK(engine.nodes().empty());
         }
 
         THEN("contains no connections")
         {
-            CHECK(std::distance(engine.connections().begin(), engine.connections().end()) == 0);
+            CHECK(engine.connections().empty());
         }
 
         THEN("contains no inputs")
         {
-            CHECK(std::distance(engine.inputs().begin(), engine.inputs().end()) == 0);
+            CHECK(engine.inputs().empty());
         }
 
         THEN("contains no outputs")
         {
-            CHECK(std::distance(engine.outputs().begin(), engine.outputs().end()) == 0);
+            CHECK(engine.outputs().empty());
+        }
+
+        WHEN("add inputs")
+        {
+            engine.inputs().resize(3);
+
+            THEN("engine reports new number of inputs")
+            {
+                CHECK(engine.inputs().size() == 3);
+            }
+        }
+
+        WHEN("add outputs")
+        {
+            engine.outputs().resize(3);
+
+            THEN("engine reports new number of inputs")
+            {
+                CHECK(engine.outputs().size() == 3);
+            }
         }
 
         WHEN("insert simple pass through node")
         {
             auto node = std::make_unique<PassthroughNode>();
             const auto* raw = node.get();
-            auto id = node->id();
             engine.nodes().insert(std::move(node));
+
+            // connect it up
+            engine.inputs().resize(1);
+            engine.outputs().resize(1);
+            engine.connections().insert(Connection{
+                .in = Connection::Endpoint{0},
+                .out =
+                    Connection::Node{
+                        .id = raw->id(),
+                        .port = raw->inputs().front(),
+                    },
+            });
+            engine.connections().insert(Connection{
+                .in =
+                    Connection::Node{
+                        .id = raw->id(),
+                        .port = raw->outputs().front(),
+                    },
+                .out = Connection::Endpoint{0},
+            });
 
             THEN("the engine publishes the single node")
             {
@@ -82,42 +175,42 @@ SCENARIO("Mutating an audio engine", "[engine]")
             // TODO: implement this behaviour
             AND_WHEN("remove the node")
             {
-                engine.nodes().remove(id);
+                engine.nodes().remove(raw->id());
             }
 
-            // AND_WHEN("process audio")
-            // {
-            //     engine.compile();
-            //
-            //     std::vector<float> input(blockSize);
-            //     std::vector<float> output(blockSize, 0.0f);
-            //
-            //     // test input (sine wave)
-            //     for (size_t i = 0; i < blockSize; ++i)
-            //     {
-            //         input[i] = std::sin(2.0f * M_PI * i / blockSize);
-            //     }
-            //
-            //     std::vector<std::span<const float>> inputs = {input};
-            //     std::vector<std::span<float>> outputs = {output};
-            //
-            //     engine.process(inputs, outputs);
-            //
-            //     THEN("signal is passed through")
-            //     {
-            //         for (size_t i = 0; i < blockSize; ++i)
-            //         {
-            //             CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
-            //         }
-            //     }
-            // }
+            AND_WHEN("process audio")
+            {
+                engine.compile();
+
+                std::vector<float> input(blockSize);
+                std::vector<float> output(blockSize, 0.0f);
+
+                // test input (sine wave)
+                for (size_t i = 0; i < blockSize; ++i)
+                {
+                    input[i] = std::sin(2.0f * M_PI * i / blockSize);
+                }
+
+                std::vector<std::span<const float>> inputs = {input};
+                std::vector<std::span<float>> outputs = {output};
+
+                engine.process(inputs, outputs);
+
+                THEN("signal is passed through")
+                {
+                    for (size_t i = 0; i < blockSize; ++i)
+                    {
+                        CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
+                    }
+                }
+            }
         }
 
-        WHEN("insert three simple pass through nodes")
+        WHEN("insert three nodes")
         {
-            auto node0 = std::make_unique<PassthroughNode>();
-            auto node1 = std::make_unique<PassthroughNode>();
-            auto node2 = std::make_unique<PassthroughNode>();
+            auto node0 = std::make_unique<BasicNode>();
+            auto node1 = std::make_unique<BasicNode>();
+            auto node2 = std::make_unique<BasicNode>();
 
             const auto id0 = node0->id();
             const auto id1 = node1->id();

@@ -2,6 +2,7 @@
 
 #include <ygglet/engine/node.hpp>
 
+#include <boost/assert.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/uuid/uuid.hpp>
 
@@ -9,7 +10,7 @@
 
 namespace ygglet::engine {
 
-template <typename G> struct Nodes
+template <typename E> struct Nodes
 {
     struct iterator : public boost::iterator_facade<iterator, Node, boost::random_access_traversal_tag>
     {
@@ -18,7 +19,7 @@ template <typename G> struct Nodes
     private:
         friend class boost::iterator_core_access;
         friend struct Nodes;
-        using UnderlyingIterator = decltype(std::declval<G&>().m_graph.control.nodes.begin());
+        using UnderlyingIterator = decltype(std::declval<E&>().m_control.nodes.begin());
         iterator(UnderlyingIterator itr)
         : m_itr(itr)
         {
@@ -34,29 +35,35 @@ template <typename G> struct Nodes
 
     using const_iterator = iterator;
 
-    iterator begin() { return iterator(m_engine.m_graph.control.nodes.begin()); }
-    iterator end() { return iterator(m_engine.m_graph.control.nodes.end()); }
+    iterator begin() { return iterator(m_engine.m_control.nodes.begin()); }
+    iterator end() { return iterator(m_engine.m_control.nodes.end()); }
 
-    const_iterator begin() const { return begin(); }
-    const_iterator end() const { return end(); }
+    const_iterator begin() const { return iterator(m_engine.m_control.nodes.begin()); }
+    const_iterator end() const { return iterator(m_engine.m_control.nodes.end()); }
 
+    // TODO: transitions
     void insert(std::unique_ptr<Node> node)
-        requires(!std::is_const_v<G>)
+        requires(!std::is_const_v<E>)
     {
+        BOOST_ASSERT_MSG(node->m_buffers.storage.empty() && node->m_buffers.storage.empty(),
+                         "Expected buffers to be unallocated");
+
         // allocate buffers
-        auto& buffers = G::buffers(*node);
+        auto& buffers = node->m_buffers.storage;
         buffers.resize(node->outputs().size());
         for (auto& buffer : buffers)
         {
             buffer = std::vector<float>(m_engine.m_blockSize, 0.0f);
+            node->m_buffers.buffers.push_back(buffer);
         }
 
         auto id = node->id();
-        m_engine.m_graph.control.nodes.insert({id, std::move(node)});
+        m_engine.m_control.nodes.insert({id, std::move(node)});
     }
 
+    // TODO: transitions
     void remove(boost::uuids::uuid id)
-        requires(!std::is_const_v<G>)
+        requires(!std::is_const_v<E>)
     {
         // TODO: safely mark for deletion and destroy
         // after an "audio epoch" when the render graph is
@@ -64,28 +71,32 @@ template <typename G> struct Nodes
     }
 
     Node& operator[](boost::uuids::uuid id)
-        requires(!std::is_const_v<G>)
+        requires(!std::is_const_v<E>)
     {
-        return *m_engine.m_graph.control.nodes[id];
+        return *m_engine.m_control.nodes[id];
     }
 
     const Node& operator[](boost::uuids::uuid id) const
     {
-        auto itr = m_engine.m_graph.control.nodes.find(id);
+        auto itr = m_engine.m_control.nodes.find(id);
         return *itr->second;
     }
 
-    iterator find(boost::uuids::uuid id) { return iterator{m_engine.m_graph.control.nodes.find(id)}; }
+    iterator find(boost::uuids::uuid id) { return iterator{m_engine.m_control.nodes.find(id)}; }
+
+    std::size_t size() const { return m_engine.m_control.nodes.size(); }
+
+    bool empty() const { return m_engine.m_control.nodes.empty(); }
 
 private:
-    friend G;
+    friend E;
 
-    Nodes(G& engine)
+    Nodes(E& engine)
     : m_engine(engine)
     {
     }
 
-    G& m_engine;
+    E& m_engine;
 };
 
 } // namespace ygglet::engine

@@ -6,6 +6,7 @@
 
 namespace ygglet::engine {
 
+template <typename> struct Nodes;
 struct Engine;
 
 struct Node
@@ -23,7 +24,8 @@ protected:
     std::span<std::span<float>> buffers();
 
 private:
-    friend class Engine;
+    friend struct Engine;
+    template <typename> friend struct Nodes;
 
     boost::uuids::uuid m_id;
 

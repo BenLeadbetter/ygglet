@@ -44,13 +44,14 @@ Engine::~Engine() = default;
 
 void Engine::process(std::span<std::span<const float>> inputs, std::span<std::span<float>> outputs)
 {
-    auto& graph = m_graph.render.current();
+    auto& graph = m_render.current();
 
     if (inputs.size() != graph.inputs.size() || outputs.size() != graph.outputs.size())
     {
         return;
     }
 
+    // assign external input buffers
     for (auto i = 0; i != inputs.size(); ++i)
     {
         if (graph.inputs[i])
@@ -59,14 +60,16 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
         }
     }
 
+    // assign external output buffers
     for (auto i = 0; i != outputs.size(); ++i)
     {
-        if (graph.inputs[i])
+        if (graph.outputs[i])
         {
             *graph.outputs[i] = outputs[i];
         }
     }
 
+    // process nodes
     for (auto i = 0; i != graph.nodes.size(); ++i)
     {
         graph.nodes[i].node->process(graph.nodes[i].inputs);
@@ -101,11 +104,13 @@ void Engine::compile()
     boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*> renderNodes;
     boost::topological_sort(graph, std::back_inserter(order));
 
-    auto& renderGraph = m_graph.render.inactive();
+    auto& renderGraph = m_render.inactive();
 
     // TODO: is this safe ?
     // How do I know the audio thread isn't still processing this one?
     renderGraph.nodes.clear();
+    renderGraph.inputs.resize(m_control.inputs.size());
+    renderGraph.outputs.resize(m_control.outputs.size());
 
     renderGraph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
 
@@ -148,9 +153,9 @@ void Engine::compile()
         const auto in = std::get<Connection::Endpoint>(connection.in);
         std::visit(Visitor{
                        [&](const Connection::Node& out) {
-                           auto& node = *m_graph.control.nodes.find(out.id)->second;
+                           auto& node = *m_control.nodes.find(out.id)->second;
                            const auto index =
-                               std::distance(node.inputs().begin(), std::ranges::find(node.outputs(), out.port));
+                               std::distance(node.inputs().begin(), std::ranges::find(node.inputs(), out.port));
                            BOOST_ASSERT(index != node.inputs().size());
                            renderGraph.inputs[in.index] = &renderNodes.find(node.id())->second->inputs[index];
                        },
@@ -171,10 +176,10 @@ void Engine::compile()
     {
         const auto out = std::get<Connection::Endpoint>(connection.out);
         const auto in = std::get<Connection::Node>(connection.in);
-        auto& node = *m_graph.control.nodes.find(in.id)->second;
-        const auto index = std::distance(node.inputs().begin(), std::ranges::find(node.outputs(), in.port));
-        BOOST_ASSERT(index != node.inputs().size());
-        renderGraph.outputs[out.index] = &renderNodes.find(node.id())->second->inputs[index];
+        auto& node = *m_control.nodes.find(in.id)->second;
+        const auto index = std::distance(node.outputs().begin(), std::ranges::find(node.outputs(), in.port));
+        BOOST_ASSERT(index != node.outputs().size());
+        renderGraph.outputs[out.index] = &nodes().find(node.id())->buffers()[index];
     }
 
     // silence any inputs not connected
@@ -189,7 +194,7 @@ void Engine::compile()
         }
     }
 
-    m_graph.render.publish();
+    m_render.publish();
 }
 
 Nodes<Engine> Engine::nodes()
@@ -217,19 +222,19 @@ Inputs<const Engine> Engine::inputs() const
     return Inputs<const Engine>(*this);
 }
 
+Inputs<Engine> Engine::inputs()
+{
+    return Inputs<Engine>(*this);
+}
+
 Outputs<const Engine> Engine::outputs() const
 {
     return Outputs<const Engine>(*this);
 }
 
-std::vector<std::vector<float>>& Engine::buffers(Node& node)
+Outputs<Engine> Engine::outputs()
 {
-    return node.m_buffers.storage;
-}
-
-const std::vector<std::vector<float>>& Engine::buffers(const Node& node)
-{
-    return node.m_buffers.storage;
+    return Outputs<Engine>(*this);
 }
 
 } // namespace ygglet::engine

@@ -27,7 +27,7 @@ struct ControlGraph
 {
     using Endpoints = std::vector<boost::uuids::uuid>;
     using Nodes = boost::container::flat_map<boost::uuids::uuid, std::unique_ptr<Node>>;
-    using Connections = boost::container::flat_set<Connection>;
+    using Connections = boost::container::flat_map<boost::uuids::uuid, Connection>;
     Endpoints inputs;
     Endpoints outputs;
     Nodes nodes;
@@ -45,7 +45,7 @@ struct RenderGraph
     {
         std::vector<Node> nodes;
         std::vector<std::span<const float>*> inputs;
-        std::vector<std::span<const float>*> outputs;
+        std::vector<std::span<float>*> outputs;
         std::vector<float> silence;
     };
     std::atomic<std::uint32_t> index{};
@@ -83,7 +83,10 @@ struct Engine
     auto connections() const -> Connections<const Engine>;
 
     auto inputs() const -> Inputs<const Engine>;
+    auto inputs() -> Inputs<Engine>;
+
     auto outputs() const -> Outputs<const Engine>;
+    auto outputs() -> Outputs<Engine>;
 
 private:
     template <typename, typename> friend struct Endpoints;
@@ -95,14 +98,8 @@ private:
     double m_sampleRate;
     std::uint32_t m_blockSize;
 
-    static std::vector<std::vector<float>>& buffers(Node&);
-    static const std::vector<std::vector<float>>& buffers(const Node&);
-
-    struct
-    {
-        detail::ControlGraph control;
-        detail::RenderGraph render;
-    } m_graph;
+    detail::ControlGraph m_control;
+    detail::RenderGraph m_render;
 };
 
 } // namespace ygglet::engine
