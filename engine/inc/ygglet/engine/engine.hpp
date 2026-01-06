@@ -1,5 +1,9 @@
 #pragma once
 
+#include <ygglet/engine/detail/connections.hpp>
+#include <ygglet/engine/detail/endpoints.hpp>
+#include <ygglet/engine/detail/nodes.hpp>
+
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -15,13 +19,13 @@ struct Connection;
 struct Engine;
 struct Node;
 
+namespace detail {
+
 template <typename, typename> struct Endpoints;
 template <typename> struct Connections;
 template <typename> struct Inputs;
 template <typename> struct Nodes;
 template <typename> struct Outputs;
-
-namespace detail {
 
 struct ControlGraph
 {
@@ -76,24 +80,24 @@ struct Engine
 
     void compile();
 
-    auto nodes() -> Nodes<Engine>;
-    auto nodes() const -> Nodes<const Engine>;
+    auto nodes() -> detail::Nodes<Engine>;
+    auto nodes() const -> detail::Nodes<const Engine>;
 
-    auto connections() -> Connections<Engine>;
-    auto connections() const -> Connections<const Engine>;
+    auto connections() -> detail::Connections<Engine>;
+    auto connections() const -> detail::Connections<const Engine>;
 
-    auto inputs() const -> Inputs<const Engine>;
-    auto inputs() -> Inputs<Engine>;
+    auto inputs() const -> detail::Inputs<const Engine>;
+    auto inputs() -> detail::Inputs<Engine>;
 
-    auto outputs() const -> Outputs<const Engine>;
-    auto outputs() -> Outputs<Engine>;
+    auto outputs() const -> detail::Outputs<const Engine>;
+    auto outputs() -> detail::Outputs<Engine>;
 
 private:
-    template <typename, typename> friend struct Endpoints;
-    template <typename> friend struct Connections;
-    template <typename> friend struct Nodes;
-    template <typename> friend struct Inputs;
-    template <typename> friend struct Outputs;
+    template <typename, typename> friend struct detail::Endpoints;
+    template <typename> friend struct detail::Connections;
+    template <typename> friend struct detail::Nodes;
+    template <typename> friend struct detail::Inputs;
+    template <typename> friend struct detail::Outputs;
 
     double m_sampleRate;
     std::uint32_t m_blockSize;

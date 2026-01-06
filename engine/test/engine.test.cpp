@@ -1,84 +1,25 @@
-#include <ygglet/engine/connections.hpp>
-#include <ygglet/engine/endpoints.hpp>
 #include <ygglet/engine/engine.hpp>
 #include <ygglet/engine/node.hpp>
-#include <ygglet/engine/nodes.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <boost/uuid/generators.hpp>
+#include <gmock/gmock.h>
 
-#include <algorithm>
+#include <boost/uuid/generators.hpp>
 
 namespace ygglet::engine::test {
 
-struct BasicNode : Node
+struct MockNode : Node
 {
-    BasicNode()
-    : Node(3, 2)
+    MockNode(std::size_t inputs, std::size_t outputs)
+    : Node(inputs, outputs)
     {
     }
 
-    void process(std::span<std::span<const float>> inputs) override
-    {
-        REQUIRE(inputs.size() == 3);
-        REQUIRE(buffers().size() == 2);
-        // do nothing
-    }
-};
+    MOCK_METHOD(void, process, (std::span<std::span<const float>> inputs), (override));
 
-struct PassthroughNode : Node
-{
-    PassthroughNode()
-    : Node(1, 1)
-    {
-    }
-
-    void process(std::span<std::span<const float>> inputs) override
-    {
-        REQUIRE(inputs.size() == 1);
-        REQUIRE(buffers().size() == 1);
-        REQUIRE(inputs[0].size() == buffers()[0].size());
-        std::memcpy(buffers()[0].data(), inputs[0].data(), inputs[0].size() * sizeof(float));
-    }
-};
-
-struct ConstantSignalNode : Node
-{
-    ConstantSignalNode(float v)
-    : Node(1, 1)
-    , v(v)
-    {
-    }
-
-    void process(std::span<std::span<const float>>) override
-    {
-        REQUIRE(buffers().size() == 1);
-        std::ranges::fill(buffers()[0], v);
-    }
-
-    float v{0.0f};
-};
-
-struct MultiplyNode : Node
-{
-    MultiplyNode(float m)
-    : Node(1, 1)
-    , m(m)
-    {
-    }
-
-    void process(std::span<std::span<const float>>) override
-    {
-        REQUIRE(buffers().size() == 1);
-        for (auto& v : buffers()[0])
-        {
-            v *= m;
-        }
-    }
-
-    float m{1.0f};
+    using Node::buffers;
 };
 
 SCENARIO("Mutating an audio engine", "[engine]")
@@ -136,10 +77,10 @@ SCENARIO("Mutating an audio engine", "[engine]")
             }
         }
 
-        WHEN("insert simple pass through node")
+        WHEN("insert a connected node")
         {
-            auto node = std::make_unique<PassthroughNode>();
-            const auto* raw = node.get();
+            auto node = std::make_unique<MockNode>(1, 1);
+            auto* raw = node.get();
             engine.nodes().insert(std::move(node));
 
             // connect it up
@@ -180,6 +121,13 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
             AND_WHEN("process audio")
             {
+                EXPECT_CALL(*raw, process(::testing::_)).Times(1).WillOnce([raw](auto inputs) {
+                    REQUIRE(inputs.size() == 1);
+                    REQUIRE(raw->buffers().size() == 1);
+                    REQUIRE(inputs[0].size() == raw->buffers()[0].size());
+                    std::memcpy(raw->buffers()[0].data(), inputs[0].data(), inputs[0].size() * sizeof(float));
+                });
+
                 engine.compile();
 
                 std::vector<float> input(blockSize);
@@ -196,6 +144,11 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
                 engine.process(inputs, outputs);
 
+                THEN("process is called")
+                {
+                    CHECK(testing::Mock::VerifyAndClearExpectations(raw));
+                }
+
                 THEN("signal is passed through")
                 {
                     for (size_t i = 0; i < blockSize; ++i)
@@ -204,21 +157,23 @@ SCENARIO("Mutating an audio engine", "[engine]")
                     }
                 }
             }
+
+            CHECK(testing::Mock::VerifyAndClearExpectations(raw));
         }
 
         WHEN("insert three nodes")
         {
-            auto node0 = std::make_unique<BasicNode>();
-            auto node1 = std::make_unique<BasicNode>();
-            auto node2 = std::make_unique<BasicNode>();
+            auto node0 = std::make_unique<MockNode>(0, 2);
+            auto node1 = std::make_unique<MockNode>(2, 3);
+            auto node2 = std::make_unique<MockNode>(3, 2);
 
             const auto id0 = node0->id();
             const auto id1 = node1->id();
             const auto id2 = node2->id();
 
-            const auto* raw0 = node0.get();
-            const auto* raw1 = node1.get();
-            const auto* raw2 = node2.get();
+            auto* raw0 = node0.get();
+            auto* raw1 = node1.get();
+            auto* raw2 = node2.get();
 
             engine.nodes().insert(std::move(node0));
             engine.nodes().insert(std::move(node1));
@@ -271,6 +226,10 @@ SCENARIO("Mutating an audio engine", "[engine]")
             {
                 CHECK(constEngine.nodes().find(boost::uuids::random_generator{}()) == constEngine.nodes().end());
             }
+
+            CHECK(testing::Mock::VerifyAndClearExpectations(raw0));
+            CHECK(testing::Mock::VerifyAndClearExpectations(raw1));
+            CHECK(testing::Mock::VerifyAndClearExpectations(raw2));
         }
     }
 }

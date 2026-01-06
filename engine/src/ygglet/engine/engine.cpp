@@ -1,9 +1,9 @@
 #include <ygglet/engine/connection.hpp>
-#include <ygglet/engine/connections.hpp>
-#include <ygglet/engine/endpoints.hpp>
+#include <ygglet/engine/detail/connections.hpp>
+#include <ygglet/engine/detail/endpoints.hpp>
+#include <ygglet/engine/detail/nodes.hpp>
 #include <ygglet/engine/engine.hpp>
 #include <ygglet/engine/node.hpp>
-#include <ygglet/engine/nodes.hpp>
 #include <ygglet/engine/visitor.hpp>
 
 #include <boost/core/ignore_unused.hpp>
@@ -83,8 +83,19 @@ void Engine::compile()
     auto graph = IntermediateGraph{};
     boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor> descriptors;
 
-    for (const auto& node : nodes())
+    for (auto& node : nodes())
     {
+        if (node.buffers().empty() && !node.outputs().empty())
+        {
+            // allocate buffers
+            node.m_buffers.storage.resize(node.outputs().size());
+            for (auto& buffer : node.m_buffers.storage)
+            {
+                buffer = std::vector<float>(m_blockSize, 0.0f);
+                node.m_buffers.buffers.push_back(buffer);
+            }
+        }
+
         auto descriptor = boost::add_vertex(node.id(), graph);
         descriptors.insert({node.id(), descriptor});
     }
@@ -197,44 +208,44 @@ void Engine::compile()
     m_render.publish();
 }
 
-Nodes<Engine> Engine::nodes()
+detail::Nodes<Engine> Engine::nodes()
 {
-    return Nodes<Engine>(*this);
+    return detail::Nodes<Engine>(*this);
 }
 
-Nodes<const Engine> Engine::nodes() const
+detail::Nodes<const Engine> Engine::nodes() const
 {
-    return Nodes<const Engine>(*this);
+    return detail::Nodes<const Engine>(*this);
 }
 
-Connections<Engine> Engine::connections()
+detail::Connections<Engine> Engine::connections()
 {
-    return Connections<Engine>(*this);
+    return detail::Connections<Engine>(*this);
 }
 
-Connections<const Engine> Engine::connections() const
+detail::Connections<const Engine> Engine::connections() const
 {
-    return Connections<const Engine>(*this);
+    return detail::Connections<const Engine>(*this);
 }
 
-Inputs<const Engine> Engine::inputs() const
+detail::Inputs<const Engine> Engine::inputs() const
 {
-    return Inputs<const Engine>(*this);
+    return detail::Inputs<const Engine>(*this);
 }
 
-Inputs<Engine> Engine::inputs()
+detail::Inputs<Engine> Engine::inputs()
 {
-    return Inputs<Engine>(*this);
+    return detail::Inputs<Engine>(*this);
 }
 
-Outputs<const Engine> Engine::outputs() const
+detail::Outputs<const Engine> Engine::outputs() const
 {
-    return Outputs<const Engine>(*this);
+    return detail::Outputs<const Engine>(*this);
 }
 
-Outputs<Engine> Engine::outputs()
+detail::Outputs<Engine> Engine::outputs()
 {
-    return Outputs<Engine>(*this);
+    return detail::Outputs<Engine>(*this);
 }
 
 } // namespace ygglet::engine

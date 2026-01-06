@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace ygglet::engine {
+namespace ygglet::engine::detail {
 
 template <typename E> struct Nodes
 {
@@ -45,18 +45,6 @@ template <typename E> struct Nodes
     void insert(std::unique_ptr<Node> node)
         requires(!std::is_const_v<E>)
     {
-        BOOST_ASSERT_MSG(node->m_buffers.storage.empty() && node->m_buffers.storage.empty(),
-                         "Expected buffers to be unallocated");
-
-        // allocate buffers
-        auto& buffers = node->m_buffers.storage;
-        buffers.resize(node->outputs().size());
-        for (auto& buffer : buffers)
-        {
-            buffer = std::vector<float>(m_engine.m_blockSize, 0.0f);
-            node->m_buffers.buffers.push_back(buffer);
-        }
-
         auto id = node->id();
         m_engine.m_control.nodes.insert({id, std::move(node)});
     }
@@ -99,4 +87,4 @@ private:
     E& m_engine;
 };
 
-} // namespace ygglet::engine
+} // namespace ygglet::engine::detail

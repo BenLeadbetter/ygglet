@@ -6,7 +6,7 @@
 #include <boost/uuid/generators.hpp>
 #include <boost/uuid/uuid.hpp>
 
-namespace ygglet::engine {
+namespace ygglet::engine::detail {
 
 template <typename E> struct Connections
 {
@@ -72,4 +72,4 @@ private:
     E& m_engine;
 };
 
-} // namespace ygglet::engine
+} // namespace ygglet::engine::detail

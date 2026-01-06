@@ -4,7 +4,7 @@
 #include <boost/uuid/generators.hpp>
 #include <boost/uuid/uuid.hpp>
 
-namespace ygglet::engine {
+namespace ygglet::engine::detail {
 
 template <typename E, typename D> struct Endpoints
 {
@@ -69,4 +69,4 @@ template <typename G> struct Outputs : Endpoints<G, Outputs<G>>
     static auto& endpoints(G& engine) { return engine.m_control.outputs; }
 };
 
-} // namespace ygglet::engine
+} // namespace ygglet::engine::detail

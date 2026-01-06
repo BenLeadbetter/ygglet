@@ -6,7 +6,6 @@
 
 namespace ygglet::engine {
 
-template <typename> struct Nodes;
 struct Engine;
 
 struct Node
@@ -25,7 +24,6 @@ protected:
 
 private:
     friend struct Engine;
-    template <typename> friend struct Nodes;
 
     boost::uuids::uuid m_id;
 

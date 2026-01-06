@@ -10,9 +10,10 @@ class YggletConan(ConanFile):
         "catch2/3.11.0",
         "cmajor/1.0.3088",
         "foonathan-memory/0.7.3",
+        "gtest/1.17.0",
         "spdlog/1.16.0",
-        "tl-expected/20190710",
         "strong_type/v9",
+        "tl-expected/20190710",
     )
 
     def generate(self):
