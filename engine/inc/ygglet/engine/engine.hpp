@@ -40,6 +40,7 @@ struct Engine
     ~Engine();
 
     void compile();
+    bool ready();
 
     auto nodes() -> detail::Nodes<Engine>;
     auto nodes() const -> detail::Nodes<const Engine>;

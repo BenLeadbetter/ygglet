@@ -29,10 +29,13 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
 {
     auto& graph = m_render.current();
 
-    if (inputs.size() != graph.inputs.size() || outputs.size() != graph.outputs.size())
+    if (graph.nodes.empty())
     {
         return;
     }
+
+    BOOST_ASSERT(inputs.size() == graph.inputs.size());
+    BOOST_ASSERT(outputs.size() == graph.outputs.size());
 
     // assign external input buffers
     for (auto i = 0; i != inputs.size(); ++i)
@@ -65,6 +68,8 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     {
         graph.nodes[i].node->process(graph.nodes[i].inputs);
     }
+
+    graph.epoch++;
 }
 
 namespace {
@@ -79,6 +84,8 @@ template <typename T> struct ActiveVisitor : boost::default_dfs_visitor
 
 void Engine::compile()
 {
+    BOOST_ASSERT(ready());
+
     using IntermediateGraph =
         boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::uuids::uuid, Connection>;
     using Descriptors = boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor>;
@@ -104,7 +111,7 @@ void Engine::compile()
 
     // allocate buffers
 
-    for (auto& node : nodes() | boost::adaptors::filtered([&](const auto& node) {
+    for (auto& node : nodes() | boost::adaptors::filtered([&](auto& node) {
                           return node.buffers().empty() && node.outputs() != 0 && &node != m_control.input &&
                                  &node != m_control.output;
                       }))
@@ -125,14 +132,14 @@ void Engine::compile()
         boost::make_reverse_graph(graph), descriptors[m_control.output->id()], ActiveVisitor{.active = active},
         boost::make_vector_property_map<boost::default_color_type>(boost::get(boost::vertex_index, graph)));
 
-    auto& renderGraph = m_render.inactive();
 
-    // TODO: is this safe ?
-    // How do I know the audio thread isn't still processing this one?
+    // reset the inactive render graph
+    auto& renderGraph = m_render.inactive();
     renderGraph.nodes.clear();
     renderGraph.inputs.resize(m_control.input->outputs());
     renderGraph.outputs.resize(m_control.output->inputs());
     renderGraph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
+    renderGraph.epoch = 0;
 
     using RenderNodes = boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*>;
     RenderNodes renderNodes;
@@ -195,6 +202,12 @@ void Engine::compile()
     }
 
     m_render.publish();
+}
+
+bool Engine::ready()
+{
+    auto& current = m_render.current();
+    return current.nodes.empty() || current.epoch > 0;
 }
 
 detail::Nodes<Engine> Engine::nodes()

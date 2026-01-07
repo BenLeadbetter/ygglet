@@ -24,6 +24,7 @@ struct RenderGraph
         std::vector<std::variant<std::span<const float>*, std::uint32_t>> inputs;
         std::vector<std::span<float>*> outputs;
         std::vector<float> silence;
+        std::atomic<std::uint32_t> epoch{};
     };
 
     Graph& current();

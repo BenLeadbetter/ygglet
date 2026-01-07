@@ -32,9 +32,33 @@ SCENARIO("Mutating an audio engine", "[engine]")
         auto engine = Engine(1, 1, sampleRate, maxBlockSize);
         const auto& constEngine = engine;
 
-        WHEN("process audio")
+        THEN("ready")
         {
-            engine.process({}, {});
+            CHECK(engine.ready());
+        }
+
+        WHEN("compile")
+        {
+            engine.compile();
+
+            THEN("not ready")
+            {
+                CHECK(!engine.ready());
+
+                AND_WHEN("process audio")
+                {
+                    std::vector<float> input(blockSize, 0.0f);
+                    std::vector<float> output(blockSize, 0.0f);
+                    std::vector<std::span<const float>> inputs = {input};
+                    std::vector<std::span<float>> outputs = {output};
+                    engine.process(inputs, outputs);
+
+                    THEN("ready")
+                    {
+                        CHECK(engine.ready());
+                    }
+                }
+            }
         }
 
         THEN("contains input and output nodes")
