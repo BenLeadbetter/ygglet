@@ -59,14 +59,14 @@ SCENARIO("Mutating an audio engine", "[engine]")
             }();
 
             // connect it up
-            engine.connections().insert({
+            REQUIRE(engine.connections().insert({
                 .in = {.node = id, .port = 0},
                 .out = {.node = engine.nodes().input().id(), .port = 0},
-            });
-            engine.connections().insert({
+            }));
+            REQUIRE(engine.connections().insert({
                 .in = {.node = engine.nodes().output().id(), .port = 0},
                 .out = {.node = id, .port = 0},
-            });
+            }));
 
             THEN("the engine publishes the additional node")
             {
@@ -179,6 +179,74 @@ SCENARIO("Mutating an audio engine", "[engine]")
             THEN("non-existent node id returns end on const engine")
             {
                 CHECK(constEngine.nodes().find(boost::uuids::random_generator{}()) == constEngine.nodes().end());
+            }
+
+            AND_WHEN("connect to external input that doesn't exist")
+            {
+                const auto result = engine.connections().insert({
+                    .in = {.node = id1, .port = 0},
+                    .out = {.node = engine.nodes().input().id(), .port = 1},
+                });
+
+                THEN("fails gracefully with error")
+                {
+                    using namespace connection_error;
+                    CHECK(result == tl::unexpected{Error{NonExistentPort{.port{
+                                        .node = engine.nodes().input().id(),
+                                        .port = 1,
+                                    }}}});
+                }
+            }
+
+            AND_WHEN("connect to external output that doesn't exist")
+            {
+                const auto result = engine.connections().insert({
+                    .in = {.node = engine.nodes().output().id(), .port = 1},
+                    .out = {.node = id0, .port = 0},
+                });
+
+                THEN("fails gracefully with error")
+                {
+                    using namespace connection_error;
+                    CHECK(result == tl::unexpected{Error{NonExistentPort{.port{
+                                        .node = engine.nodes().output().id(),
+                                        .port = 1,
+                                    }}}});
+                }
+            }
+
+            AND_WHEN("connect to input node that doesn't exist")
+            {
+                const auto result = engine.connections().insert({
+                    .in = {.node = {}, .port = 0},
+                    .out = {.node = id0, .port = 0},
+                });
+
+                THEN("fails gracefully with error")
+                {
+                    using namespace connection_error;
+                    CHECK(result == tl::unexpected{Error{NonExistentPort{.port{
+                                        .node = {},
+                                        .port = 0,
+                                    }}}});
+                }
+            }
+
+            AND_WHEN("connect to output node that doesn't exist")
+            {
+                const auto result = engine.connections().insert({
+                    .in = {.node = id1, .port = 0},
+                    .out = {.node = {}, .port = 0},
+                });
+
+                THEN("fails gracefully with error")
+                {
+                    using namespace connection_error;
+                    CHECK(result == tl::unexpected{Error{NonExistentPort{.port{
+                                        .node = {},
+                                        .port = 0,
+                                    }}}});
+                }
             }
 
             CHECK(testing::Mock::VerifyAndClearExpectations(node0));

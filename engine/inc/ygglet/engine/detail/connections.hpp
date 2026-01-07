@@ -6,6 +6,17 @@
 #include <boost/uuid/generators.hpp>
 #include <boost/uuid/uuid.hpp>
 
+#include <tl/expected.hpp>
+
+namespace ygglet::engine::connection_error {
+struct NonExistentPort
+{
+    Connection::Port port;
+    friend bool operator==(const NonExistentPort& lhs, const NonExistentPort& rhs) { return lhs.port == rhs.port; }
+};
+using Error = std::variant<NonExistentPort>;
+} // namespace ygglet::engine::connection_error
+
 namespace ygglet::engine::detail {
 
 template <typename E> struct Connections
@@ -42,9 +53,35 @@ template <typename E> struct Connections
     iterator find(boost::uuids::uuid id) { return m_engine.m_control.connections.find(id); }
 
     // TODO: transitions
-    boost::uuids::uuid insert(const Connection& connection)
+    [[nodiscard]] tl::expected<boost::uuids::uuid, connection_error::Error> insert(const Connection& connection)
         requires(!std::is_const_v<E>)
     {
+        auto in = m_engine.nodes().find(connection.in.node);
+        auto out = m_engine.nodes().find(connection.out.node);
+        if (in == m_engine.nodes().end())
+        {
+            return tl::unexpected{connection_error::NonExistentPort{
+                .port = connection.in,
+            }};
+        }
+        if (out == m_engine.nodes().end())
+        {
+            return tl::unexpected{connection_error::NonExistentPort{
+                .port = connection.out,
+            }};
+        }
+        if (connection.in.port >= in->inputs())
+        {
+            return tl::unexpected{connection_error::NonExistentPort{
+                .port = connection.in,
+            }};
+        }
+        if (connection.out.port >= out->outputs())
+        {
+            return tl::unexpected{connection_error::NonExistentPort{
+                .port = connection.out,
+            }};
+        }
         boost::uuids::uuid id = boost::uuids::random_generator{}();
         m_engine.m_control.connections.insert({id, connection});
         return id;
