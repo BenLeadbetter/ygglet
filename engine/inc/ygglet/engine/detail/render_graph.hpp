@@ -25,12 +25,14 @@ struct RenderGraph
         std::vector<std::span<float>*> outputs;
         std::vector<float> silence;
     };
-    std::atomic<std::uint32_t> index{};
-    std::array<Graph, 2> buffers{};
 
     Graph& current();
     Graph& inactive();
     void publish();
+
+private:
+    std::atomic<std::uint32_t> index{};
+    std::array<Graph, 2> buffers{};
 };
 
 } // namespace ygglet::engine::detail

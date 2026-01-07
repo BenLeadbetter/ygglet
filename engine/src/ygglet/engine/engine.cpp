@@ -14,25 +14,6 @@
 
 namespace ygglet::engine {
 
-namespace detail {
-
-RenderGraph::Graph& RenderGraph::current()
-{
-    return buffers[index.load(std::memory_order_relaxed)];
-}
-
-RenderGraph::Graph& RenderGraph::inactive()
-{
-    return buffers[1 - index.load(std::memory_order_relaxed)];
-}
-
-void RenderGraph::publish()
-{
-    index.store(1 - index.load(std::memory_order_relaxed), std::memory_order_release);
-}
-
-} // namespace detail
-
 Engine::Engine(std::size_t inputs, std::size_t outputs, double sampleRate, std::uint32_t blockSize)
 : m_sampleRate(sampleRate)
 , m_blockSize(blockSize)
