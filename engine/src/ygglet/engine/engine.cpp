@@ -7,6 +7,7 @@
 
 #include <boost/core/ignore_unused.hpp>
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/reverse_graph.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/indexed.hpp>
@@ -65,6 +66,16 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     }
 }
 
+namespace {
+
+template <typename T> struct ActiveVisitor : boost::default_dfs_visitor
+{
+    template <typename V, typename G> void discover_vertex(V u, const G& graph) { active.insert(graph[u]); }
+    T& active;
+};
+
+} // namespace
+
 void Engine::compile()
 {
     using IntermediateGraph =
@@ -99,6 +110,11 @@ void Engine::compile()
     boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*> renderNodes;
     boost::topological_sort(graph, std::back_inserter(order));
 
+    boost::container::flat_set<boost::uuids::uuid> active;
+    boost::depth_first_visit(
+        boost::make_reverse_graph(graph), descriptors[m_control.output->id()], ActiveVisitor{.active = active},
+        boost::make_vector_property_map<boost::default_color_type>(boost::get(boost::vertex_index, graph)));
+
     auto& renderGraph = m_render.inactive();
 
     // TODO: is this safe ?
@@ -113,6 +129,8 @@ void Engine::compile()
 
     for (auto& node : order | boost::adaptors::transformed([&](auto descriptor) -> Node& {
                           return *nodes().find(graph[descriptor]);
+                      }) | boost::adaptors::filtered([&](auto& node) {
+                          return active.find(node.id()) != active.end();
                       }))
     {
         auto renderNode = detail::RenderGraph::Node{&node};
