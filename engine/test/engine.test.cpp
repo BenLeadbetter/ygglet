@@ -119,6 +119,41 @@ SCENARIO("Mutating an audio engine", "[engine]")
             CHECK(testing::Mock::VerifyAndClearExpectations(node));
         }
 
+        WHEN("connection external input to external output")
+        {
+            REQUIRE(engine.connections().insert({
+                .in = {.node = engine.nodes().output().id(), .port = 0},
+                .out = {.node = engine.nodes().input().id(), .port = 0},
+            }));
+
+            AND_WHEN("process audio")
+            {
+                engine.compile();
+
+                std::vector<float> input(blockSize);
+                std::vector<float> output(blockSize, 0.0f);
+
+                // test input (sine wave)
+                for (size_t i = 0; i < blockSize; ++i)
+                {
+                    input[i] = std::sin(2.0f * M_PI * i / blockSize);
+                }
+
+                std::vector<std::span<const float>> inputs = {input};
+                std::vector<std::span<float>> outputs = {output};
+
+                engine.process(inputs, outputs);
+
+                THEN("input is passed through to the output")
+                {
+                    for (size_t i = 0; i < blockSize; ++i)
+                    {
+                        CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
+                    }
+                }
+            }
+        }
+
         WHEN("insert three nodes")
         {
             const auto insert = [&](std::uint32_t i, std::uint32_t o) {

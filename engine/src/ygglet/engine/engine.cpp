@@ -35,10 +35,18 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     // assign external input buffers
     for (auto i = 0; i != inputs.size(); ++i)
     {
-        if (graph.inputs[i])
-        {
-            *graph.inputs[i] = inputs[i];
-        }
+        std::visit(Visitor{
+                       [&](std::span<const float>* buffer) {
+                           if (buffer)
+                           {
+                               *buffer = inputs[i];
+                           }
+                       },
+                       [&](std::uint32_t passthrough) {
+                           std::memcpy(outputs[passthrough].data(), inputs[i].data(), inputs[i].size() * sizeof(float));
+                       },
+                   },
+                   graph.inputs[i]);
     }
 
     // assign external output buffers
@@ -120,8 +128,8 @@ void Engine::compile()
             auto& from = *nodes().find(edge.out.node);
             if (renderNode.node == m_control.output && &from == m_control.input)
             {
-                // TODO: passthrough
-                BOOST_ASSERT(false);
+                // passthrough
+                renderGraph.inputs[edge.out.port] = edge.out.port;
             }
             else if (renderNode.node == m_control.output)
             {

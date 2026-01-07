@@ -21,7 +21,7 @@ struct RenderGraph
     struct Graph
     {
         std::vector<Node> nodes;
-        std::vector<std::span<const float>*> inputs;
+        std::vector<std::variant<std::span<const float>*, std::uint32_t>> inputs;
         std::vector<std::span<float>*> outputs;
         std::vector<float> silence;
     };
