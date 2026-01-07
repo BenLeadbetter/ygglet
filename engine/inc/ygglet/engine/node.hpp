@@ -10,12 +10,12 @@ struct Engine;
 
 struct Node
 {
-    Node(std::size_t inputs, std::size_t outputs);
+    Node(std::uint32_t inputs, std::uint32_t outputs);
     virtual ~Node();
 
     boost::uuids::uuid id() const;
-    std::span<const boost::uuids::uuid> inputs() const;
-    std::span<const boost::uuids::uuid> outputs() const;
+    std::uint32_t inputs() const;
+    std::uint32_t outputs() const;
 
     virtual void process(std::span<std::span<const float>> inputs) = 0;
 
@@ -33,9 +33,8 @@ private:
         std::vector<std::span<float>> buffers;
     } m_buffers;
 
-    using Endpoints = std::vector<boost::uuids::uuid>;
-    Endpoints m_inputs;
-    Endpoints m_outputs;
+    std::uint32_t m_inputs{};
+    std::uint32_t m_outputs{};
 };
 
 } // namespace ygglet::engine

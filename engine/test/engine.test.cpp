@@ -29,7 +29,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
         const double sampleRate = 44100.0;
         const size_t maxBlockSize = 512;
         const size_t blockSize = 64;
-        auto engine = Engine(sampleRate, maxBlockSize);
+        auto engine = Engine(1, 1, sampleRate, maxBlockSize);
         const auto& constEngine = engine;
 
         WHEN("process audio")
@@ -37,9 +37,10 @@ SCENARIO("Mutating an audio engine", "[engine]")
             engine.process({}, {});
         }
 
-        THEN("contains no nodes")
+        THEN("contains input and output nodes")
         {
-            CHECK(engine.nodes().empty());
+            CHECK(!engine.nodes().empty());
+            CHECK(engine.nodes().size() == 2);
         }
 
         THEN("contains no connections")
@@ -47,85 +48,45 @@ SCENARIO("Mutating an audio engine", "[engine]")
             CHECK(engine.connections().empty());
         }
 
-        THEN("contains no inputs")
-        {
-            CHECK(engine.inputs().empty());
-        }
-
-        THEN("contains no outputs")
-        {
-            CHECK(engine.outputs().empty());
-        }
-
-        WHEN("add inputs")
-        {
-            engine.inputs().resize(3);
-
-            THEN("engine reports new number of inputs")
-            {
-                CHECK(engine.inputs().size() == 3);
-            }
-        }
-
-        WHEN("add outputs")
-        {
-            engine.outputs().resize(3);
-
-            THEN("engine reports new number of inputs")
-            {
-                CHECK(engine.outputs().size() == 3);
-            }
-        }
-
         WHEN("insert a connected node")
         {
-            auto node = std::make_unique<MockNode>(1, 1);
-            auto* raw = node.get();
-            engine.nodes().insert(std::move(node));
+            auto [node, id] = [&]() {
+                auto node = std::make_unique<MockNode>(1, 1);
+                auto* raw = node.get();
+                auto id = node->id();
+                engine.nodes().insert(std::move(node));
+                return std::make_pair(raw, id);
+            }();
 
             // connect it up
-            engine.inputs().resize(1);
-            engine.outputs().resize(1);
-            engine.connections().insert(Connection{
-                .in = Connection::Endpoint{0},
-                .out =
-                    Connection::Node{
-                        .id = raw->id(),
-                        .port = raw->inputs().front(),
-                    },
+            engine.connections().insert({
+                .in = {.node = id, .port = 0},
+                .out = {.node = engine.nodes().input().id(), .port = 0},
             });
-            engine.connections().insert(Connection{
-                .in =
-                    Connection::Node{
-                        .id = raw->id(),
-                        .port = raw->outputs().front(),
-                    },
-                .out = Connection::Endpoint{0},
+            engine.connections().insert({
+                .in = {.node = engine.nodes().output().id(), .port = 0},
+                .out = {.node = id, .port = 0},
             });
 
-            THEN("the engine publishes the single node")
+            THEN("the engine publishes the additional node")
             {
-                CHECK(std::distance(engine.nodes().begin(), engine.nodes().end()) == 1);
-            }
-
-            THEN("access the node via an iterator")
-            {
-                CHECK(&*engine.nodes().begin() == raw);
+                CHECK(engine.nodes().size() == 3);
             }
 
             // TODO: implement this behaviour
             AND_WHEN("remove the node")
             {
-                engine.nodes().remove(raw->id());
+                engine.nodes().remove(id);
             }
 
             AND_WHEN("process audio")
             {
-                EXPECT_CALL(*raw, process(::testing::_)).Times(1).WillOnce([raw](auto inputs) {
+                EXPECT_CALL(*node, process(::testing::_)).Times(1).WillOnce([node](auto inputs) {
                     REQUIRE(inputs.size() == 1);
-                    REQUIRE(raw->buffers().size() == 1);
-                    REQUIRE(inputs[0].size() == raw->buffers()[0].size());
-                    std::memcpy(raw->buffers()[0].data(), inputs[0].data(), inputs[0].size() * sizeof(float));
+                    REQUIRE(node->buffers().size() == 1);
+                    REQUIRE(inputs[0].size() == node->buffers()[0].size());
+                    // passthrough
+                    std::memcpy(node->buffers()[0].data(), inputs[0].data(), inputs[0].size() * sizeof(float));
                 });
 
                 engine.compile();
@@ -144,13 +105,10 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
                 engine.process(inputs, outputs);
 
-                THEN("process is called")
+                THEN("output contains processed audio")
                 {
-                    CHECK(testing::Mock::VerifyAndClearExpectations(raw));
-                }
+                    REQUIRE(testing::Mock::VerifyAndClearExpectations(node));
 
-                THEN("signal is passed through")
-                {
                     for (size_t i = 0; i < blockSize; ++i)
                     {
                         CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
@@ -158,37 +116,33 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 }
             }
 
-            CHECK(testing::Mock::VerifyAndClearExpectations(raw));
+            CHECK(testing::Mock::VerifyAndClearExpectations(node));
         }
 
         WHEN("insert three nodes")
         {
-            auto node0 = std::make_unique<MockNode>(0, 2);
-            auto node1 = std::make_unique<MockNode>(2, 3);
-            auto node2 = std::make_unique<MockNode>(3, 2);
+            const auto insert = [&](std::uint32_t i, std::uint32_t o) {
+                auto node = std::make_unique<MockNode>(i, o);
+                auto id = node->id();
+                auto* raw = node.get();
+                engine.nodes().insert(std::move(node));
+                return std::make_pair(raw, id);
+            };
 
-            const auto id0 = node0->id();
-            const auto id1 = node1->id();
-            const auto id2 = node2->id();
+            auto [node0, id0] = insert(0, 2);
+            auto [node1, id1] = insert(2, 3);
+            auto [node2, id2] = insert(3, 2);
 
-            auto* raw0 = node0.get();
-            auto* raw1 = node1.get();
-            auto* raw2 = node2.get();
-
-            engine.nodes().insert(std::move(node0));
-            engine.nodes().insert(std::move(node1));
-            engine.nodes().insert(std::move(node2));
-
-            THEN("the engine publishes three nodes")
+            THEN("the engine publishes additional three nodes")
             {
-                CHECK(std::distance(engine.nodes().begin(), engine.nodes().end()) == 3);
+                CHECK(engine.nodes().size() == 5);
             }
 
             THEN("indexed access into the nodes")
             {
-                CHECK(&engine.nodes()[id0] == raw0);
-                CHECK(&engine.nodes()[id1] == raw1);
-                CHECK(&engine.nodes()[id2] == raw2);
+                CHECK(&engine.nodes()[id0] == node0);
+                CHECK(&engine.nodes()[id1] == node1);
+                CHECK(&engine.nodes()[id2] == node2);
             }
 
             THEN("find node by id")
@@ -203,16 +157,16 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 CHECK(engine.nodes().find(boost::uuids::random_generator{}()) == engine.nodes().end());
             }
 
-            THEN("const engine publishes three nodes")
+            THEN("const engine publishes additional three nodes")
             {
-                CHECK(std::distance(constEngine.nodes().begin(), constEngine.nodes().end()) == 3);
+                CHECK(engine.nodes().size() == 5);
             }
 
             THEN("indexed access via const engine into the nodes")
             {
-                CHECK(&constEngine.nodes()[id0] == raw0);
-                CHECK(&constEngine.nodes()[id1] == raw1);
-                CHECK(&constEngine.nodes()[id2] == raw2);
+                CHECK(&constEngine.nodes()[id0] == node0);
+                CHECK(&constEngine.nodes()[id1] == node1);
+                CHECK(&constEngine.nodes()[id2] == node2);
             }
 
             THEN("find node by id on const engine")
@@ -227,9 +181,9 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 CHECK(constEngine.nodes().find(boost::uuids::random_generator{}()) == constEngine.nodes().end());
             }
 
-            CHECK(testing::Mock::VerifyAndClearExpectations(raw0));
-            CHECK(testing::Mock::VerifyAndClearExpectations(raw1));
-            CHECK(testing::Mock::VerifyAndClearExpectations(raw2));
+            CHECK(testing::Mock::VerifyAndClearExpectations(node0));
+            CHECK(testing::Mock::VerifyAndClearExpectations(node1));
+            CHECK(testing::Mock::VerifyAndClearExpectations(node2));
         }
     }
 }

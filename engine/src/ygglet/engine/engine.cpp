@@ -1,6 +1,5 @@
 #include <ygglet/engine/connection.hpp>
 #include <ygglet/engine/detail/connections.hpp>
-#include <ygglet/engine/detail/endpoints.hpp>
 #include <ygglet/engine/detail/nodes.hpp>
 #include <ygglet/engine/engine.hpp>
 #include <ygglet/engine/node.hpp>
@@ -34,9 +33,10 @@ void RenderGraph::publish()
 
 } // namespace detail
 
-Engine::Engine(double sampleRate, std::uint32_t blockSize)
+Engine::Engine(std::size_t inputs, std::size_t outputs, double sampleRate, std::uint32_t blockSize)
 : m_sampleRate(sampleRate)
 , m_blockSize(blockSize)
+, m_control(inputs, outputs)
 {
 }
 
@@ -78,17 +78,17 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
 
 void Engine::compile()
 {
-    using IntermediateGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::uuids::uuid,
-                                                    std::pair<Connection::Node, Connection::Node>>;
+    using IntermediateGraph =
+        boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::uuids::uuid, Connection>;
     auto graph = IntermediateGraph{};
     boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor> descriptors;
 
     for (auto& node : nodes())
     {
-        if (node.buffers().empty() && !node.outputs().empty())
+        if (node.buffers().empty() && node.outputs() != 0 && &node != m_control.input && &node != m_control.output)
         {
             // allocate buffers
-            node.m_buffers.storage.resize(node.outputs().size());
+            node.m_buffers.storage.resize(node.outputs());
             for (auto& buffer : node.m_buffers.storage)
             {
                 buffer = std::vector<float>(m_blockSize, 0.0f);
@@ -100,15 +100,10 @@ void Engine::compile()
         descriptors.insert({node.id(), descriptor});
     }
 
-    for (const auto& [in, out] : connections() | boost::adaptors::filtered([](const auto& connection) {
-                                     return std::holds_alternative<Connection::Node>(connection.in) &&
-                                            std::holds_alternative<Connection::Node>(connection.out);
-                                 }) | boost::adaptors::transformed([](const auto& connection) {
-                                     return std::make_pair(std::get<Connection::Node>(connection.in),
-                                                           std::get<Connection::Node>(connection.out));
-                                 }))
+    for (const auto& connection : connections())
     {
-        boost::add_edge(descriptors.find(out.id)->second, descriptors.find(out.id)->second, {in, out}, graph);
+        boost::add_edge(descriptors.find(connection.out.node)->second, descriptors.find(connection.in.node)->second,
+                        connection, graph);
     }
 
     std::vector<IntermediateGraph::vertex_descriptor> order;
@@ -120,77 +115,52 @@ void Engine::compile()
     // TODO: is this safe ?
     // How do I know the audio thread isn't still processing this one?
     renderGraph.nodes.clear();
-    renderGraph.inputs.resize(m_control.inputs.size());
-    renderGraph.outputs.resize(m_control.outputs.size());
+    renderGraph.inputs.resize(m_control.input->outputs());
+    renderGraph.outputs.resize(m_control.output->inputs());
 
     renderGraph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
 
-    for (auto descriptor : order)
+    // build render graph
+
+    for (auto& node : order | boost::adaptors::transformed([&](auto descriptor) -> Node& {
+                          return *nodes().find(graph[descriptor]);
+                      }))
     {
-        auto& node = *nodes().find(graph[descriptor]);
         auto renderNode = detail::RenderGraph::Node{&node};
-        renderNode.inputs.resize(node.inputs().size());
+        renderNode.inputs.resize(node.inputs());
 
         // connect inter-node buffers
 
-        for (const auto& edge : boost::make_iterator_range(boost::in_edges(descriptor, graph)) |
+        for (const auto& edge : boost::make_iterator_range(boost::in_edges(descriptors[node.id()], graph)) |
                                     boost::adaptors::transformed([&graph](auto descriptor) {
                                         return graph[descriptor];
                                     }))
         {
-            const auto buffer = [&]() -> std::span<const float> {
-                const auto& from = *nodes().find(edge.second.id);
-                const auto index =
-                    std::distance(from.outputs().begin(), std::ranges::find(from.outputs(), edge.second.port));
-                BOOST_ASSERT(index != from.outputs().size());
-                return node.m_buffers.buffers[index];
-            }();
-            const auto index =
-                std::distance(node.outputs().begin(), std::ranges::find(node.outputs(), edge.first.port));
-            BOOST_ASSERT(index != node.outputs().size());
-            renderNode.inputs[index] = buffer;
+            auto& from = *nodes().find(edge.out.node);
+            if (renderNode.node == m_control.output && &from == m_control.input)
+            {
+                // TODO: passthrough
+                BOOST_ASSERT(false);
+            }
+            else if (renderNode.node == m_control.output)
+            {
+                // external output
+                renderGraph.outputs[edge.in.port] = &from.m_buffers.buffers[edge.out.port];
+            }
+            else if (&from == m_control.input)
+            {
+                // external input
+                renderGraph.inputs[edge.out.port] = &renderNode.inputs[edge.out.port];
+            }
+            else
+            {
+                // internal
+                renderNode.inputs[edge.in.port] = from.m_buffers.buffers[edge.out.port];
+            }
         }
 
         renderGraph.nodes.push_back(std::move(renderNode));
         renderNodes.insert({node.id(), &renderGraph.nodes.back()});
-    }
-
-    // connect external input buffers
-
-    for (const auto& connection : connections() | boost::adaptors::filtered([](const auto& connection) {
-                                      return std::holds_alternative<Connection::Endpoint>(connection.in);
-                                  }))
-    {
-        const auto in = std::get<Connection::Endpoint>(connection.in);
-        std::visit(Visitor{
-                       [&](const Connection::Node& out) {
-                           auto& node = *m_control.nodes.find(out.id)->second;
-                           const auto index =
-                               std::distance(node.inputs().begin(), std::ranges::find(node.inputs(), out.port));
-                           BOOST_ASSERT(index != node.inputs().size());
-                           renderGraph.inputs[in.index] = &renderNodes.find(node.id())->second->inputs[index];
-                       },
-                       [&](const Connection::Endpoint& out) {
-                           // TODO: audio was passed through
-                           BOOST_ASSERT(false);
-                       },
-                   },
-                   connection.out);
-    }
-
-    // connect external output buffers
-
-    for (const auto& connection : connections() | boost::adaptors::filtered([](const auto& connection) {
-                                      return std::holds_alternative<Connection::Endpoint>(connection.out) &&
-                                             !std::holds_alternative<Connection::Endpoint>(connection.in);
-                                  }))
-    {
-        const auto out = std::get<Connection::Endpoint>(connection.out);
-        const auto in = std::get<Connection::Node>(connection.in);
-        auto& node = *m_control.nodes.find(in.id)->second;
-        const auto index = std::distance(node.outputs().begin(), std::ranges::find(node.outputs(), in.port));
-        BOOST_ASSERT(index != node.outputs().size());
-        renderGraph.outputs[out.index] = &nodes().find(node.id())->buffers()[index];
     }
 
     // silence any inputs not connected
@@ -226,26 +196,6 @@ detail::Connections<Engine> Engine::connections()
 detail::Connections<const Engine> Engine::connections() const
 {
     return detail::Connections<const Engine>(*this);
-}
-
-detail::Inputs<const Engine> Engine::inputs() const
-{
-    return detail::Inputs<const Engine>(*this);
-}
-
-detail::Inputs<Engine> Engine::inputs()
-{
-    return detail::Inputs<Engine>(*this);
-}
-
-detail::Outputs<const Engine> Engine::outputs() const
-{
-    return detail::Outputs<const Engine>(*this);
-}
-
-detail::Outputs<Engine> Engine::outputs()
-{
-    return detail::Outputs<Engine>(*this);
 }
 
 } // namespace ygglet::engine

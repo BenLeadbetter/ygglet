@@ -35,6 +35,9 @@ template <typename E> struct Nodes
 
     using const_iterator = iterator;
 
+    const Node& input() { return *m_engine.m_control.input; }
+    const Node& output() { return *m_engine.m_control.output; }
+
     iterator begin() { return iterator(m_engine.m_control.nodes.begin()); }
     iterator end() { return iterator(m_engine.m_control.nodes.end()); }
 

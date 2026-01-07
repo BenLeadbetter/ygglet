@@ -2,23 +2,20 @@
 
 #include <boost/uuid/uuid.hpp>
 
-#include <variant>
-
 namespace ygglet::engine {
 
 struct Connection
 {
-    struct Node
+    struct
     {
-        boost::uuids::uuid id{};
-        boost::uuids::uuid port{};
-    };
-    struct Endpoint
+        boost::uuids::uuid node{};
+        std::uint32_t port{};
+    } in;
+    struct
     {
-        std::uint32_t index{};
-    };
-    std::variant<Node, Endpoint> in;
-    std::variant<Node, Endpoint> out;
+        boost::uuids::uuid node{};
+        std::uint32_t port{};
+    } out;
 };
 
 } // namespace ygglet::engine

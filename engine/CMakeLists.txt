@@ -2,8 +2,12 @@ find_package(boost REQUIRED)
 
 set(ENGINE_SOURCES
     # cmake-format: sortable
-    ./inc/ygglet/engine/engine.hpp ./inc/ygglet/engine/node.hpp
-    ./src/ygglet/engine/engine.cpp ./src/ygglet/engine/node.cpp)
+    ./inc/ygglet/engine/detail/control_graph.hpp
+    ./inc/ygglet/engine/engine.hpp
+    ./inc/ygglet/engine/node.hpp
+    ./src/ygglet/engine/detail/control_graph.cpp
+    ./src/ygglet/engine/engine.cpp
+    ./src/ygglet/engine/node.cpp)
 
 add_library(ygglet-engine ${ENGINE_SOURCES})
 

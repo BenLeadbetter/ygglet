@@ -5,22 +5,12 @@
 
 namespace ygglet::engine {
 
-Node::Node(std::size_t inputs, std::size_t outputs)
+Node::Node(std::uint32_t inputs, std::uint32_t outputs)
 : m_id(boost::uuids::random_generator{}())
+, m_inputs(inputs)
+, m_outputs(outputs)
 {
     boost::uuids::random_generator uuidgen{};
-
-    m_inputs.resize(inputs);
-    for (auto& input : m_inputs)
-    {
-        input = uuidgen();
-    }
-
-    m_outputs.resize(outputs);
-    for (auto& output : m_outputs)
-    {
-        output = uuidgen();
-    }
 }
 
 Node::~Node() = default;
@@ -30,12 +20,12 @@ boost::uuids::uuid Node::id() const
     return m_id;
 }
 
-std::span<const boost::uuids::uuid> Node::inputs() const
+std::uint32_t Node::inputs() const
 {
     return m_inputs;
 }
 
-std::span<const boost::uuids::uuid> Node::outputs() const
+std::uint32_t Node::outputs() const
 {
     return m_outputs;
 }
