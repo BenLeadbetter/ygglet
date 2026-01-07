@@ -148,7 +148,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 {
                     for (size_t i = 0; i < blockSize; ++i)
                     {
-                        // CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
+                        CHECK(output[i] == Catch::Approx(input[i]).margin(0.00001f));
                     }
                 }
             }
@@ -348,6 +348,18 @@ SCENARIO("Mutating an audio engine", "[engine]")
                     std::vector<std::span<float>> outputs = {output};
 
                     engine.process(inputs, outputs);
+
+                    THEN("output contains processed audio")
+                    {
+                        REQUIRE(testing::Mock::VerifyAndClearExpectations(node0));
+                        REQUIRE(testing::Mock::VerifyAndClearExpectations(node1));
+                        REQUIRE(testing::Mock::VerifyAndClearExpectations(node2));
+
+                        for (size_t i = 0; i < blockSize; ++i)
+                        {
+                            CHECK(output[i] == Catch::Approx(0.7f).margin(0.00001f));
+                        }
+                    }
                 }
             }
 

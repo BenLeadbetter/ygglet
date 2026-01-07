@@ -11,6 +11,7 @@
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ygglet::engine {
@@ -80,34 +81,43 @@ void Engine::compile()
 {
     using IntermediateGraph =
         boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::uuids::uuid, Connection>;
-    auto graph = IntermediateGraph{};
-    boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor> descriptors;
+    using Descriptors = boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor>;
 
-    for (auto& node : nodes())
-    {
-        if (node.buffers().empty() && node.outputs() != 0 && &node != m_control.input && &node != m_control.output)
+    Descriptors descriptors;
+    const auto graph = [&]() {
+        IntermediateGraph graph{};
+
+        for (auto& node : nodes())
         {
-            // allocate buffers
-            node.m_buffers.storage.resize(node.outputs());
-            for (auto& buffer : node.m_buffers.storage)
-            {
-                buffer = std::vector<float>(m_blockSize, 0.0f);
-                node.m_buffers.buffers.push_back(buffer);
-            }
+            auto descriptor = boost::add_vertex(node.id(), graph);
+            descriptors.insert({node.id(), descriptor});
         }
 
-        auto descriptor = boost::add_vertex(node.id(), graph);
-        descriptors.insert({node.id(), descriptor});
-    }
+        for (const auto& connection : connections())
+        {
+            boost::add_edge(descriptors.find(connection.out.node)->second, descriptors.find(connection.in.node)->second,
+                            connection, graph);
+        }
 
-    for (const auto& connection : connections())
+        return graph;
+    }();
+
+    // allocate buffers
+
+    for (auto& node : nodes() | boost::adaptors::filtered([&](const auto& node) {
+                          return node.buffers().empty() && node.outputs() != 0 && &node != m_control.input &&
+                                 &node != m_control.output;
+                      }))
     {
-        boost::add_edge(descriptors.find(connection.out.node)->second, descriptors.find(connection.in.node)->second,
-                        connection, graph);
+        node.m_buffers.storage.resize(node.outputs());
+        for (auto& buffer : node.m_buffers.storage)
+        {
+            buffer = std::vector<float>(m_blockSize, 0.0f);
+            node.m_buffers.buffers.push_back(buffer);
+        }
     }
 
     std::vector<IntermediateGraph::vertex_descriptor> order;
-    boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*> renderNodes;
     boost::topological_sort(graph, std::back_inserter(order));
 
     boost::container::flat_set<boost::uuids::uuid> active;
@@ -122,12 +132,14 @@ void Engine::compile()
     renderGraph.nodes.clear();
     renderGraph.inputs.resize(m_control.input->outputs());
     renderGraph.outputs.resize(m_control.output->inputs());
-
     renderGraph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
+
+    using RenderNodes = boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*>;
+    RenderNodes renderNodes;
 
     // build render graph
 
-    for (auto& node : order | boost::adaptors::transformed([&](auto descriptor) -> Node& {
+    for (auto& node : order | boost::adaptors::reversed | boost::adaptors::transformed([&](auto descriptor) -> Node& {
                           return *nodes().find(graph[descriptor]);
                       }) | boost::adaptors::filtered([&](auto& node) {
                           return active.find(node.id()) != active.end();
@@ -136,7 +148,7 @@ void Engine::compile()
         auto renderNode = detail::RenderGraph::Node{&node};
         renderNode.inputs.resize(node.inputs());
 
-        // connect inter-node buffers
+        // connect buffers
 
         for (const auto& edge : boost::make_iterator_range(boost::in_edges(descriptors[node.id()], graph)) |
                                     boost::adaptors::transformed([&graph](auto descriptor) {
