@@ -3,6 +3,7 @@
 #include <ygglet/engine/node.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/graph/adjacency_list.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/uuid/uuid.hpp>
 
@@ -49,6 +50,8 @@ template <typename E> struct Nodes
         requires(!std::is_const_v<E>)
     {
         auto id = node->id();
+        auto descriptor = boost::add_vertex(id, m_engine.m_control.graph);
+        m_engine.m_control.descriptors.insert({id, descriptor});
         m_engine.m_control.nodes.insert({id, std::move(node)});
     }
 

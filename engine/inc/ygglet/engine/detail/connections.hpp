@@ -2,6 +2,7 @@
 
 #include <ygglet/engine/connection.hpp>
 
+#include <boost/graph/adjacency_list.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/uuid/generators.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -82,8 +83,14 @@ template <typename E> struct Connections
                 .port = connection.out,
             }};
         }
+
+        auto& descriptors = m_engine.m_control.descriptors;
+        auto& graph = m_engine.m_control.graph;
         boost::uuids::uuid id = boost::uuids::random_generator{}();
+
         m_engine.m_control.connections.insert({id, connection});
+        boost::add_edge(descriptors.find(connection.out.node)->second, descriptors.find(connection.in.node)->second,
+                        connection, graph);
         return id;
     }
 

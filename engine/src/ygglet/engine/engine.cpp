@@ -86,29 +86,6 @@ void Engine::compile()
 {
     BOOST_ASSERT(ready());
 
-    using IntermediateGraph =
-        boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, boost::uuids::uuid, Connection>;
-    using Descriptors = boost::container::flat_map<boost::uuids::uuid, IntermediateGraph::vertex_descriptor>;
-
-    Descriptors descriptors;
-    const auto graph = [&]() {
-        IntermediateGraph graph{};
-
-        for (auto& node : nodes())
-        {
-            auto descriptor = boost::add_vertex(node.id(), graph);
-            descriptors.insert({node.id(), descriptor});
-        }
-
-        for (const auto& connection : connections())
-        {
-            boost::add_edge(descriptors.find(connection.out.node)->second, descriptors.find(connection.in.node)->second,
-                            connection, graph);
-        }
-
-        return graph;
-    }();
-
     // allocate buffers
 
     for (auto& node : nodes() | boost::adaptors::filtered([&](auto& node) {
@@ -124,30 +101,29 @@ void Engine::compile()
         }
     }
 
-    std::vector<IntermediateGraph::vertex_descriptor> order;
-    boost::topological_sort(graph, std::back_inserter(order));
+    std::vector<detail::ControlGraph::Graph::vertex_descriptor> order;
+    boost::topological_sort(m_control.graph, std::back_inserter(order));
 
     boost::container::flat_set<boost::uuids::uuid> active;
     boost::depth_first_visit(
-        boost::make_reverse_graph(graph), descriptors[m_control.output->id()], ActiveVisitor{.active = active},
-        boost::make_vector_property_map<boost::default_color_type>(boost::get(boost::vertex_index, graph)));
+        boost::make_reverse_graph(m_control.graph), m_control.descriptors[m_control.output->id()],
+        ActiveVisitor{.active = active},
+        boost::make_vector_property_map<boost::default_color_type>(boost::get(boost::vertex_index, m_control.graph)));
 
 
     // reset the inactive render graph
-    auto& renderGraph = m_render.inactive();
-    renderGraph.nodes.clear();
-    renderGraph.inputs.resize(m_control.input->outputs());
-    renderGraph.outputs.resize(m_control.output->inputs());
-    renderGraph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
-    renderGraph.epoch = 0;
 
-    using RenderNodes = boost::container::flat_map<boost::uuids::uuid, detail::RenderGraph::Node*>;
-    RenderNodes renderNodes;
+    auto& render = m_render.inactive();
+    render.nodes.clear();
+    render.inputs.resize(m_control.input->outputs());
+    render.outputs.resize(m_control.output->inputs());
+    render.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
+    render.epoch = 0;
 
     // build render graph
 
     for (auto& node : order | boost::adaptors::reversed | boost::adaptors::transformed([&](auto descriptor) -> Node& {
-                          return *nodes().find(graph[descriptor]);
+                          return *nodes().find(m_control.graph[descriptor]);
                       }) | boost::adaptors::filtered([&](auto& node) {
                           return active.find(node.id()) != active.end();
                       }))
@@ -157,26 +133,27 @@ void Engine::compile()
 
         // connect buffers
 
-        for (const auto& edge : boost::make_iterator_range(boost::in_edges(descriptors[node.id()], graph)) |
-                                    boost::adaptors::transformed([&graph](auto descriptor) {
-                                        return graph[descriptor];
-                                    }))
+        for (const auto& edge :
+             boost::make_iterator_range(boost::in_edges(m_control.descriptors[node.id()], m_control.graph)) |
+                 boost::adaptors::transformed([this](auto descriptor) {
+                     return m_control.graph[descriptor];
+                 }))
         {
             auto& from = *nodes().find(edge.out.node);
             if (renderNode.node == m_control.output && &from == m_control.input)
             {
                 // passthrough
-                renderGraph.inputs[edge.out.port] = detail::RenderGraph::Graph::Passthrough{edge.out.port};
+                render.inputs[edge.out.port] = edge.out.port;
             }
             else if (renderNode.node == m_control.output)
             {
                 // external output
-                renderGraph.outputs[edge.in.port] = &from.m_buffers.buffers[edge.out.port];
+                render.outputs[edge.in.port] = &from.m_buffers.buffers[edge.out.port];
             }
             else if (&from == m_control.input)
             {
                 // external input
-                renderGraph.inputs[edge.out.port] = &renderNode.inputs[edge.out.port];
+                render.inputs[edge.out.port] = &renderNode.inputs[edge.out.port];
             }
             else
             {
@@ -185,19 +162,18 @@ void Engine::compile()
             }
         }
 
-        renderGraph.nodes.push_back(std::move(renderNode));
-        renderNodes.insert({node.id(), &renderGraph.nodes.back()});
+        render.nodes.push_back(std::move(renderNode));
     }
 
     // silence any inputs not connected
 
-    for (auto& node : renderGraph.nodes)
+    for (auto& node : render.nodes)
     {
         for (auto& input : node.inputs | boost::adaptors::filtered([](auto input) {
                                return input.empty();
                            }))
         {
-            input = renderGraph.silence;
+            input = render.silence;
         }
     }
 
