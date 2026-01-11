@@ -20,9 +20,12 @@ struct RenderGraph
     };
     struct Graph
     {
+        using BufferReferenceConst = std::span<const float>*;
+        using BufferReference = std::span<float>*;
+        using Passthrough = std::uint32_t;
         std::vector<Node> nodes;
-        std::vector<std::variant<std::span<const float>*, std::uint32_t>> inputs;
-        std::vector<std::span<float>*> outputs;
+        std::vector<std::variant<BufferReferenceConst, Passthrough>> inputs;
+        std::vector<BufferReference> outputs;
         std::vector<float> silence;
         std::atomic<std::uint32_t> epoch{};
     };

@@ -166,7 +166,7 @@ void Engine::compile()
             if (renderNode.node == m_control.output && &from == m_control.input)
             {
                 // passthrough
-                renderGraph.inputs[edge.out.port] = edge.out.port;
+                renderGraph.inputs[edge.out.port] = detail::RenderGraph::Graph::Passthrough{edge.out.port};
             }
             else if (renderNode.node == m_control.output)
             {
