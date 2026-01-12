@@ -5,8 +5,6 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_utility.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/uuid/generators.hpp>
-#include <boost/uuid/uuid.hpp>
 
 #include <tl/expected.hpp>
 
@@ -26,7 +24,7 @@ struct FeedbackLoop
 };
 struct AlreadyConnected
 {
-    boost::uuids::uuid existing;
+    ConnectionId existing;
     friend bool operator==(const AlreadyConnected& lhs, const AlreadyConnected& rhs)
     {
         return lhs.existing == rhs.existing;
@@ -39,8 +37,8 @@ namespace ygglet::engine::detail {
 
 template <typename E> struct Connections
 {
-    struct iterator : public boost::iterator_facade<iterator, std::pair<boost::uuids::uuid, Connection>,
-                                                    boost::random_access_traversal_tag>
+    struct iterator
+    : public boost::iterator_facade<iterator, std::pair<ConnectionId, Connection>, boost::random_access_traversal_tag>
     {
         iterator() = default;
 
@@ -52,7 +50,7 @@ template <typename E> struct Connections
         : m_itr(itr)
         {
         }
-        std::pair<boost::uuids::uuid, Connection>& dereference() const { return *m_itr; }
+        std::pair<ConnectionId, Connection>& dereference() const { return *m_itr; }
         void increment() { ++m_itr; }
         void decrement() { --m_itr; }
         void advance(std::ptrdiff_t n) { m_itr += n; }
@@ -69,11 +67,11 @@ template <typename E> struct Connections
     const_iterator begin() const { return iterator(m_engine.m_control.connections.begin()); }
     const_iterator end() const { return iterator(m_engine.m_control.connections.end()); }
 
-    iterator find(boost::uuids::uuid id) { return m_engine.m_control.connections.find(id); }
+    iterator find(ConnectionId id) { return m_engine.m_control.connections.find(id); }
 
     // TODO: transitions
-    [[nodiscard]] tl::expected<boost::uuids::uuid, connection_error::Error> insert(const Connection& connection,
-                                                                                   bool force = false)
+    [[nodiscard]] tl::expected<ConnectionId, connection_error::Error> insert(const Connection& connection,
+                                                                             bool force = false)
         requires(!std::is_const_v<E>)
     {
         auto in = m_engine.nodes().find(connection.in.node);
@@ -106,7 +104,7 @@ template <typename E> struct Connections
         auto& descriptors = m_engine.m_control.descriptors;
         auto& graph = m_engine.m_control.graph;
         auto& connections = m_engine.m_control.connections;
-        boost::uuids::uuid id = boost::uuids::random_generator{}();
+        auto id = ConnectionId::generate();
         const auto outv = descriptors.find(connection.out.node)->second;
         const auto inv = descriptors.find(connection.in.node)->second;
 
@@ -169,7 +167,7 @@ template <typename E> struct Connections
     }
 
     // TODO: transitions
-    void remove(boost::uuids::uuid id)
+    void remove(ConnectionId id)
         requires(!std::is_const_v<E>)
     {
         m_engine.m_control.connections.erase(id);

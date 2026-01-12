@@ -20,7 +20,7 @@ struct ControlGraph
     ControlGraph(std::size_t inputs, std::size_t outputs);
 
     using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, NodeId, Connection>;
-    using Connections = boost::container::flat_map<boost::uuids::uuid, Connection>;
+    using Connections = boost::container::flat_map<Connection::Id, Connection>;
     using Descriptors = boost::container::flat_map<NodeId, Graph::vertex_descriptor>;
     using Nodes = boost::container::flat_map<NodeId, std::unique_ptr<Node>>;
 

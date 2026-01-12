@@ -348,9 +348,9 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 // n0.0 -> n1.1
                 //         n1.2 -> out.0
 
-                boost::uuids::uuid connection0{};
-                boost::uuids::uuid connection1{};
-                boost::uuids::uuid connection2{};
+                Connection::Id connection0{};
+                Connection::Id connection1{};
+                Connection::Id connection2{};
 
                 REQUIRE(engine.connections()
                             .insert({
@@ -377,9 +377,9 @@ SCENARIO("Mutating an audio engine", "[engine]")
                                 connection2 = id;
                             }));
 
-                REQUIRE(connection0 != boost::uuids::uuid{});
-                REQUIRE(connection1 != boost::uuids::uuid{});
-                REQUIRE(connection2 != boost::uuids::uuid{});
+                REQUIRE(connection0 != Connection::Id{});
+                REQUIRE(connection1 != Connection::Id{});
+                REQUIRE(connection2 != Connection::Id{});
 
                 THEN("connections reported")
                 {
