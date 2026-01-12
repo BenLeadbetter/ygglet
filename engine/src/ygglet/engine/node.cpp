@@ -1,6 +1,5 @@
 #include <ygglet/engine/node.hpp>
 
-#include <boost/range/adaptor/transformed.hpp>
 #include <boost/uuid/generators.hpp>
 
 namespace ygglet::engine {
@@ -10,12 +9,11 @@ Node::Node(std::uint32_t inputs, std::uint32_t outputs)
 , m_inputs(inputs)
 , m_outputs(outputs)
 {
-    boost::uuids::random_generator uuidgen{};
 }
 
 Node::~Node() = default;
 
-boost::uuids::uuid Node::id() const
+Node::Id Node::id() const
 {
     return m_id;
 }

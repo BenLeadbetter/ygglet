@@ -1,5 +1,9 @@
 #pragma once
 
+#include <ygglet/engine/node_id.hpp>
+
+#include <strong_type/strong_type.hpp>
+
 #include <boost/uuid/uuid.hpp>
 
 #include <span>
@@ -10,10 +14,12 @@ struct Engine;
 
 struct Node
 {
+    using Id = NodeId;
+
     Node(std::uint32_t inputs, std::uint32_t outputs);
     virtual ~Node();
 
-    boost::uuids::uuid id() const;
+    Id id() const;
     std::uint32_t inputs() const;
     std::uint32_t outputs() const;
 
@@ -25,7 +31,7 @@ protected:
 private:
     friend struct Engine;
 
-    boost::uuids::uuid m_id;
+    Id m_id;
 
     struct
     {

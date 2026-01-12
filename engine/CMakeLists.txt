@@ -1,5 +1,6 @@
 find_package(boost REQUIRED)
 find_package(tl-expected REQUIRED)
+find_package(strong_type REQUIRED)
 
 set(ENGINE_SOURCES
     # cmake-format: sortable
@@ -15,7 +16,7 @@ target_include_directories(ygglet-engine PUBLIC inc)
 target_include_directories(ygglet-engine PRIVATE src)
 
 set(ENGINE_PUBLIC_LIBS # cmake-format: sortable
-                       Boost::headers tl::expected)
+                       Boost::headers rollbear::strong_type tl::expected)
 target_link_libraries(ygglet-engine PUBLIC ${ENGINE_PUBLIC_LIBS})
 target_link_libraries(ygglet-engine PRIVATE ${ENGINE_PRIVATE_LIBS})
 

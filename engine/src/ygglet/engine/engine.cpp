@@ -1,5 +1,6 @@
 #include <ygglet/engine/connection.hpp>
 #include <ygglet/engine/detail/connections.hpp>
+#include <ygglet/engine/detail/endpoint.hpp>
 #include <ygglet/engine/detail/nodes.hpp>
 #include <ygglet/engine/engine.hpp>
 #include <ygglet/engine/node.hpp>
@@ -104,7 +105,7 @@ void Engine::compile()
     std::vector<detail::ControlGraph::Graph::vertex_descriptor> order;
     boost::topological_sort(m_control.graph, std::back_inserter(order));
 
-    boost::container::flat_set<boost::uuids::uuid> active;
+    boost::container::flat_set<Node::Id> active;
     boost::depth_first_visit(
         boost::make_reverse_graph(m_control.graph), m_control.descriptors[m_control.output->id()],
         ActiveVisitor{.active = active},

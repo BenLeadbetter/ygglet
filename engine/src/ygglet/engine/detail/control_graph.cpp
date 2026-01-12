@@ -1,4 +1,5 @@
 #include <ygglet/engine/detail/control_graph.hpp>
+#include <ygglet/engine/detail/endpoint.hpp>
 
 namespace ygglet::engine::detail {
 

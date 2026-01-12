@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ygglet/engine/node_id.hpp>
+
 #include <boost/uuid/uuid.hpp>
 
 namespace ygglet::engine {
@@ -8,7 +10,7 @@ struct Connection
 {
     struct Port
     {
-        boost::uuids::uuid node{};
+        NodeId node{};
         std::uint32_t port{};
     };
     Port in;

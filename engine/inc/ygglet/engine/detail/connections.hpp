@@ -148,7 +148,7 @@ template <typename E> struct Connections
         return id;
     }
 
-    void disconnect(boost::uuids::uuid node)
+    void disconnect(NodeId node)
     {
         const auto next = [this, &node](auto itr) {
             return std::find_if(itr, end(), [&](const auto& p) {

@@ -215,7 +215,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
             THEN("non existent node id returns end")
             {
-                CHECK(engine.nodes().find(boost::uuids::random_generator{}()) == engine.nodes().end());
+                CHECK(engine.nodes().find(Node::Id::generate()) == engine.nodes().end());
             }
 
             THEN("const engine publishes additional three nodes")
@@ -239,7 +239,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
 
             THEN("non-existent node id returns end on const engine")
             {
-                CHECK(constEngine.nodes().find(boost::uuids::random_generator{}()) == constEngine.nodes().end());
+                CHECK(constEngine.nodes().find(Node::Id::generate()) == constEngine.nodes().end());
             }
 
             AND_WHEN("connect to external input that doesn't exist")

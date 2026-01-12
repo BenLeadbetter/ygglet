@@ -1,11 +1,11 @@
 #pragma once
 
+#include <ygglet/engine/detail/endpoint.hpp>
 #include <ygglet/engine/node.hpp>
 
 #include <boost/assert.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/uuid/uuid.hpp>
 
 #include <memory>
 
@@ -29,6 +29,7 @@ template <typename E> struct Nodes
         void increment() { ++m_itr; }
         void decrement() { --m_itr; }
         void advance(std::ptrdiff_t n) { m_itr += n; }
+
         std::ptrdiff_t distance_to(const iterator& other) const { return other.m_itr - m_itr; }
         bool equal(const iterator& other) const { return m_itr == other.m_itr; }
         UnderlyingIterator m_itr;
@@ -56,7 +57,7 @@ template <typename E> struct Nodes
     }
 
     // TODO: transitions
-    void remove(boost::uuids::uuid id)
+    void remove(NodeId id)
         requires(!std::is_const_v<E>)
     {
         // TODO: safely mark for deletion and destroy
@@ -64,19 +65,19 @@ template <typename E> struct Nodes
         // definitately not referencing it
     }
 
-    Node& operator[](boost::uuids::uuid id)
+    Node& operator[](NodeId id)
         requires(!std::is_const_v<E>)
     {
         return *m_engine.m_control.nodes[id];
     }
 
-    const Node& operator[](boost::uuids::uuid id) const
+    const Node& operator[](NodeId id) const
     {
         auto itr = m_engine.m_control.nodes.find(id);
         return *itr->second;
     }
 
-    iterator find(boost::uuids::uuid id) { return iterator{m_engine.m_control.nodes.find(id)}; }
+    iterator find(NodeId id) { return iterator{m_engine.m_control.nodes.find(id)}; }
 
     std::size_t size() const { return m_engine.m_control.nodes.size(); }
 
