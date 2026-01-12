@@ -3,9 +3,11 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_vector.hpp>
 
 #include <gmock/gmock.h>
 
+#include <boost/range/iterator_range.hpp>
 #include <boost/uuid/generators.hpp>
 
 namespace ygglet::engine::test {
@@ -188,7 +190,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 return std::make_pair(raw, id);
             };
 
-            auto [node0, id0] = insert(0, 2);
+            auto [node0, id0] = insert(1, 2);
             auto [node1, id1] = insert(2, 3);
             auto [node2, id2] = insert(3, 2);
 
@@ -325,31 +327,134 @@ SCENARIO("Mutating an audio engine", "[engine]")
                 }
             }
 
+            AND_WHEN("connect a node to itself")
+            {
+                const auto connection = Connection{
+                    .in = {.node = id1, .port = 0},
+                    .out = {.node = id1, .port = 0},
+                };
+                const auto result = engine.connections().insert(connection);
+
+                THEN("fails gracefully with error")
+                {
+                    using namespace connection_error;
+                    CHECK(result == tl::unexpected{Error{FeedbackLoop{connection}}});
+                }
+            }
+
             AND_WHEN("connect non-trivial graph")
             {
                 // in.0 -> n1.0
                 // n0.0 -> n1.1
                 //         n1.2 -> out.0
 
-                REQUIRE(engine.connections().insert({
-                    .in = {.node = id1, .port = 0},
-                    .out = {.node = engine.nodes().input().id(), .port = 0},
-                }));
-                REQUIRE(engine.connections().insert({
-                    .in = {.node = id1, .port = 1},
-                    .out = {.node = id0, .port = 0},
-                }));
-                REQUIRE(engine.connections().insert({
-                    .in = {.node = engine.nodes().output().id(), .port = 0},
-                    .out = {.node = id1, .port = 2},
-                }));
+                boost::uuids::uuid connection0{};
+                boost::uuids::uuid connection1{};
+                boost::uuids::uuid connection2{};
+
+                REQUIRE(engine.connections()
+                            .insert({
+                                .in = {.node = id1, .port = 0},
+                                .out = {.node = engine.nodes().input().id(), .port = 0},
+                            })
+                            .map([&](auto id) {
+                                connection0 = id;
+                            }));
+                REQUIRE(engine.connections()
+                            .insert({
+                                .in = {.node = id1, .port = 1},
+                                .out = {.node = id0, .port = 0},
+                            })
+                            .map([&](auto id) {
+                                connection1 = id;
+                            }));
+                REQUIRE(engine.connections()
+                            .insert({
+                                .in = {.node = engine.nodes().output().id(), .port = 0},
+                                .out = {.node = id1, .port = 2},
+                            })
+                            .map([&](auto id) {
+                                connection2 = id;
+                            }));
+
+                REQUIRE(connection0 != boost::uuids::uuid{});
+                REQUIRE(connection1 != boost::uuids::uuid{});
+                REQUIRE(connection2 != boost::uuids::uuid{});
+
+                THEN("connections reported")
+                {
+                    const auto connections = std::vector(engine.connections().begin(), engine.connections().end());
+                    CHECK(connections.size() == 3);
+                }
+
+                AND_WHEN("disconnect node")
+                {
+                    engine.connections().disconnect(id1);
+
+                    THEN("connections removed")
+                    {
+                        CHECK(
+                            std::find_if(engine.connections().begin(), engine.connections().end(), [&](const auto& p) {
+                                return p.second.in.node == id1 || p.second.out.node == id1;
+                            }) == engine.connections().end());
+                    }
+                }
+
+                AND_WHEN("connect feedback loop")
+                {
+                    const auto connection = Connection{
+                        .in = {.node = id0, .port = 0},
+                        .out = {.node = id1, .port = 1},
+                    };
+                    const auto result = engine.connections().insert(connection);
+
+                    THEN("fails gracefully with error")
+                    {
+                        using namespace connection_error;
+                        CHECK(result == tl::unexpected{Error{FeedbackLoop{connection}}});
+                    }
+                }
+
+                AND_WHEN("connect to already connected port")
+                {
+                    const auto connection = Connection{
+                        .in = {.node = engine.nodes().output().id(), .port = 0},
+                        .out = {.node = id2, .port = 0},
+                    };
+                    const auto result = engine.connections().insert(connection);
+
+                    THEN("fails gracefully with error")
+                    {
+                        using namespace connection_error;
+                        CHECK(result == tl::unexpected{Error{AlreadyConnected{connection2}}});
+                    }
+                }
+
+                AND_WHEN("connect to already connected port with force")
+                {
+                    const auto connection = Connection{
+                        .in = {.node = engine.nodes().output().id(), .port = 0},
+                        .out = {.node = id2, .port = 0},
+                    };
+                    const auto result = engine.connections().insert(connection, true);
+
+                    THEN("connection is made")
+                    {
+                        CHECK(result);
+                    }
+
+                    THEN("previous connection is removed")
+                    {
+                        CHECK(engine.connections().find(connection2) == engine.connections().end());
+                    }
+                }
 
                 AND_WHEN("process audio")
                 {
                     engine.compile();
 
                     EXPECT_CALL(*node0, process(::testing::_)).Times(1).WillOnce([node = node0](auto inputs) {
-                        REQUIRE(inputs.size() == 0);
+                        REQUIRE(inputs.size() == 1);
                         REQUIRE(node->buffers().size() == 2);
                         // constant signal
                         std::ranges::fill(node->buffers()[0], 0.4f);
@@ -364,6 +469,7 @@ SCENARIO("Mutating an audio engine", "[engine]")
                             node->buffers()[2][i] = inputs[0][i] + inputs[1][i];
                         }
                     });
+                    // node not connected to output => not called to process
                     EXPECT_CALL(*node2, process(::testing::_)).Times(0);
 
                     std::vector<float> input(blockSize, 0.3f);

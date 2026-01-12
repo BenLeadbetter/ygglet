@@ -113,12 +113,12 @@ void Engine::compile()
 
     // reset the inactive render graph
 
-    auto& render = m_render.inactive();
-    render.nodes.clear();
-    render.inputs.resize(m_control.input->outputs());
-    render.outputs.resize(m_control.output->inputs());
-    render.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
-    render.epoch = 0;
+    auto& graph = m_render.inactive();
+    graph.nodes.clear();
+    graph.inputs.resize(m_control.input->outputs());
+    graph.outputs.resize(m_control.output->inputs());
+    graph.silence = std::vector<float>(std::size_t{m_blockSize}, 0.0f);
+    graph.epoch = 0;
 
     // build render graph
 
@@ -128,8 +128,8 @@ void Engine::compile()
                           return active.find(node.id()) != active.end();
                       }))
     {
-        auto renderNode = detail::RenderGraph::Node{&node};
-        renderNode.inputs.resize(node.inputs());
+        auto render = detail::RenderGraph::Node{&node};
+        render.inputs.resize(node.inputs());
 
         // connect buffers
 
@@ -140,40 +140,40 @@ void Engine::compile()
                  }))
         {
             auto& from = *nodes().find(edge.out.node);
-            if (renderNode.node == m_control.output && &from == m_control.input)
+            if (render.node == m_control.output && &from == m_control.input)
             {
                 // passthrough
-                render.inputs[edge.out.port] = edge.out.port;
+                graph.inputs[edge.out.port] = edge.out.port;
             }
-            else if (renderNode.node == m_control.output)
+            else if (render.node == m_control.output)
             {
                 // external output
-                render.outputs[edge.in.port] = &from.m_buffers.buffers[edge.out.port];
+                graph.outputs[edge.in.port] = &from.m_buffers.buffers[edge.out.port];
             }
             else if (&from == m_control.input)
             {
                 // external input
-                render.inputs[edge.out.port] = &renderNode.inputs[edge.out.port];
+                graph.inputs[edge.out.port] = &render.inputs[edge.out.port];
             }
             else
             {
                 // internal
-                renderNode.inputs[edge.in.port] = from.m_buffers.buffers[edge.out.port];
+                render.inputs[edge.in.port] = from.m_buffers.buffers[edge.out.port];
             }
         }
 
-        render.nodes.push_back(std::move(renderNode));
+        graph.nodes.push_back(std::move(render));
     }
 
     // silence any inputs not connected
 
-    for (auto& node : render.nodes)
+    for (auto& node : graph.nodes)
     {
         for (auto& input : node.inputs | boost::adaptors::filtered([](auto input) {
                                return input.empty();
                            }))
         {
-            input = render.silence;
+            input = graph.silence;
         }
     }
 
