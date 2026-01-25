@@ -28,7 +28,7 @@ private:
     double m_sampleRate{44100.0};
     uint32_t m_blockSize{512};
 
-    engine::Engine m_graph;
+    engine::Engine m_engine;
     std::shared_ptr<Module> m_module;
 };
 
