@@ -14,7 +14,7 @@ if(YGGLET_TESTS)
   enable_testing()
 endif()
 
-include("${CMAKE_BINARY_DIR}/${CMAKE_TOOLCHAIN_FILE}")
+include("${CMAKE_TOOLCHAIN_FILE}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 include(ygglet)
