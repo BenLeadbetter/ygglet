@@ -104,7 +104,6 @@ template <typename E> struct Connections
         auto& descriptors = m_engine.m_control.descriptors;
         auto& graph = m_engine.m_control.graph;
         auto& connections = m_engine.m_control.connections;
-        auto id = ConnectionId::generate();
         const auto outv = descriptors.find(connection.out.node)->second;
         const auto inv = descriptors.find(connection.in.node)->second;
 
@@ -141,9 +140,9 @@ template <typename E> struct Connections
             }
         }
 
-        m_engine.m_control.connections.insert({id, connection});
+        m_engine.m_control.connections.insert({connection.id, connection});
         boost::add_edge(outv, inv, connection, graph);
-        return id;
+        return connection.id;
     }
 
     void disconnect(NodeId node)

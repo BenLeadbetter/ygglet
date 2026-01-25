@@ -17,7 +17,7 @@ struct Connection
     };
     Port in;
     Port out;
-    Id id;
+    Id id{Id::generate()};
 };
 
 bool operator==(const Connection::Port& lhs, const Connection::Port& rhs);

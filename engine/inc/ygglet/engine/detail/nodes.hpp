@@ -46,7 +46,6 @@ template <typename E> struct Nodes
     const_iterator begin() const { return iterator(m_engine.m_control.nodes.begin()); }
     const_iterator end() const { return iterator(m_engine.m_control.nodes.end()); }
 
-    // TODO: transitions
     void insert(std::unique_ptr<Node> node)
         requires(!std::is_const_v<E>)
     {
@@ -56,7 +55,6 @@ template <typename E> struct Nodes
         m_engine.m_control.nodes.insert({id, std::move(node)});
     }
 
-    // TODO: transitions
     void remove(NodeId id)
         requires(!std::is_const_v<E>)
     {
