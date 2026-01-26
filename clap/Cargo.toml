@@ -1,0 +1,13 @@
+[package]
+name = "ygglet-clap"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Ben Leadbetter ben.leadbetter@hotmail.com",
+]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+clap-sys = "0.5.0"
