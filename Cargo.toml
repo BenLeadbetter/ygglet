@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "conan",
+    "engine",
+    "processor",
+    "core",
+    "instance",
+    "clap",
+    "standalone",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+ygglet-conan = { path = "conan" }
+ygglet-engine = { path = "engine" }
+ygglet-processor = { path = "processor" }
+ygglet-core = { path = "core" }
+ygglet-instance = { path = "instance" }
+cmake = "0.1"
+clap-sys = "0.5.0"
+rs-store = "3.0.0"
+tokio = "1.49.0"
+tauri = "2"
+tauri-build = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

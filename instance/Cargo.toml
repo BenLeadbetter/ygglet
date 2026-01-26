@@ -3,11 +3,11 @@ name = "ygglet-instance"
 authors = [
     "Ben Leadbetter ben.leadbetter@hotmail.com",
 ]
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
-tokio = "1.49.0"
+tokio.workspace = true

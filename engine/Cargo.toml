@@ -1,0 +1,11 @@
+[package]
+name = "ygglet-engine"
+version.workspace = true
+edition.workspace = true
+links = "ygglet-engine"
+
+[dependencies]
+ygglet-conan.workspace = true
+
+[build-dependencies]
+cmake.workspace = true
