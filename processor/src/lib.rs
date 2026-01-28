@@ -9,10 +9,7 @@ mod tests {
     fn cpp_tests() {
         // Use OUT_DIR to find the test binary built by build.rs
         let out_dir = env!("OUT_DIR");
-        let test_bin = std::path::Path::new(out_dir)
-            .join("build")
-            .join("test")
-            .join("ygglet-processor-tests");
+        let test_bin = std::path::Path::new(out_dir).join("ygglet-processor-tests");
 
         let status = Command::new(&test_bin)
             .status()

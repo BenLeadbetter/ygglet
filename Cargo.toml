@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "conan",
     "engine",
     "processor",
     "core",
@@ -15,12 +14,12 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-ygglet-conan = { path = "conan" }
 ygglet-engine = { path = "engine" }
 ygglet-processor = { path = "processor" }
 ygglet-core = { path = "core" }
 ygglet-instance = { path = "instance" }
-cmake = "0.1"
+cc = "1"
+conan2 = "0.1"
 clap-sys = "0.5.0"
 rs-store = "3.0.0"
 tokio = "1.49.0"

@@ -448,15 +448,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a76abbdb2907f6fd97fb6bc0b7be96b77d328f2dd9669d1075cc03369ed22154"
 
 [[package]]
-name = "cmake"
-version = "0.1.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75443c44cd6b379beb8c5b45d85d0773baf31cce901fe7bb252f4eff3008ef7d"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -464,6 +455,15 @@ checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
 dependencies = [
  "bytes",
  "memchr",
+]
+
+[[package]]
+name = "conan2"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd2b99f85b70748a4f9871114014b66afea5d8710bd8e7a79274c97c756c08f1"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
@@ -5003,10 +5003,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ygglet-conan"
-version = "0.1.0"
-
-[[package]]
 name = "ygglet-core"
 version = "0.1.0"
 dependencies = [
@@ -5017,8 +5013,8 @@ dependencies = [
 name = "ygglet-engine"
 version = "0.1.0"
 dependencies = [
- "cmake",
- "ygglet-conan",
+ "cc",
+ "conan2",
 ]
 
 [[package]]
@@ -5032,8 +5028,8 @@ dependencies = [
 name = "ygglet-processor"
 version = "0.1.0"
 dependencies = [
- "cmake",
- "ygglet-conan",
+ "cc",
+ "conan2",
  "ygglet-engine",
 ]
 

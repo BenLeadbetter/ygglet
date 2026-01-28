@@ -1,7 +1,0 @@
-[package]
-name = "ygglet-conan"
-version.workspace = true
-edition.workspace = true
-links = "conan"
-
-[build-dependencies]

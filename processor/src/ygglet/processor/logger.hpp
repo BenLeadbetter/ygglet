@@ -6,13 +6,13 @@
 
 namespace ygglet::processor {
 
-class Module;
+struct Module;
 
 struct Logger
 {
     class Factory
     {
-        friend Module;
+        friend struct Module;
         static std::shared_ptr<Logger> make();
     };
 

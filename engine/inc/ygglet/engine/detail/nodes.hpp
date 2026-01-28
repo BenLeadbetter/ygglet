@@ -55,7 +55,7 @@ template <typename E> struct Nodes
         m_engine.m_control.nodes.insert({id, std::move(node)});
     }
 
-    void remove(NodeId id)
+    void remove(NodeId)
         requires(!std::is_const_v<E>)
     {
         // TODO: safely mark for deletion and destroy

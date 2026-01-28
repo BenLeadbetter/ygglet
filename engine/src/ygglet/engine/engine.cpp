@@ -39,7 +39,7 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     BOOST_ASSERT(outputs.size() == graph.outputs.size());
 
     // assign external input buffers
-    for (auto i = 0; i != inputs.size(); ++i)
+    for (auto i = std::size_t{}; i != inputs.size(); ++i)
     {
         std::visit(Visitor{
                        [&](std::span<const float>* buffer) {
@@ -56,7 +56,7 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     }
 
     // assign external output buffers
-    for (auto i = 0; i != outputs.size(); ++i)
+    for (auto i = std::size_t{}; i != outputs.size(); ++i)
     {
         if (graph.outputs[i])
         {
@@ -65,7 +65,7 @@ void Engine::process(std::span<std::span<const float>> inputs, std::span<std::sp
     }
 
     // process nodes
-    for (auto i = 0; i != graph.nodes.size(); ++i)
+    for (auto i = std::size_t{}; i != graph.nodes.size(); ++i)
     {
         graph.nodes[i].node->process(graph.nodes[i].inputs);
     }
@@ -129,7 +129,10 @@ void Engine::compile()
                           return active.find(node.id()) != active.end();
                       }))
     {
-        auto render = detail::RenderGraph::Node{&node};
+        auto render = detail::RenderGraph::Node{
+            .node = &node,
+            .inputs = {},
+        };
         render.inputs.resize(node.inputs());
 
         // connect buffers
