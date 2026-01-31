@@ -3,11 +3,11 @@ name = "ygglet-core"
 authors = [
     "Ben Leadbetter ben.leadbetter@hotmail.com",
 ]
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2021"
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
-rs-store.workspace = true
+rs-store = "3.0.0"

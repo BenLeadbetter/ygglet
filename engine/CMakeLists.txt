@@ -1,20 +1,6 @@
-# cmake_minimum_required must be first for standalone builds
-cmake_minimum_required(VERSION 3.20)
-
-# Support standalone builds (when invoked via cargo/build.rs)
-if(NOT CMAKE_PROJECT_NAME)
-  project(ygglet-engine)
-endif()
-
-if(NOT TARGET Boost::headers)
-  find_package(Boost REQUIRED)
-endif()
-if(NOT TARGET tl::expected)
-  find_package(tl-expected REQUIRED)
-endif()
-if(NOT TARGET rollbear::strong_type)
-  find_package(strong_type REQUIRED)
-endif()
+find_package(boost REQUIRED)
+find_package(tl-expected REQUIRED)
+find_package(strong_type REQUIRED)
 
 set(ENGINE_SOURCES
     # cmake-format: sortable

@@ -1,7 +1,4 @@
-# Support standalone builds (when invoked via cargo/build.rs)
-if(NOT TARGET Catch2::Catch2WithMain)
-  find_package(Catch2 REQUIRED)
-endif()
+find_package(Catch2 REQUIRED)
 
 set(PROCESSOR_TEST_SOURCES # cmake-format: sortable processor.test.cpp
     kernal_manager.test.cpp)

@@ -1,10 +1,5 @@
-# Support standalone builds (when invoked via cargo/build.rs)
-if(NOT TARGET Catch2::Catch2WithMain)
-  find_package(Catch2 REQUIRED)
-endif()
-if(NOT TARGET gtest::gtest)
-  find_package(GTest REQUIRED)
-endif()
+find_package(Catch2 REQUIRED)
+find_package(GTest REQUIRED)
 
 set(ENGINE_TEST_SOURCES # cmake-format: sortable
                         engine.test.cpp)

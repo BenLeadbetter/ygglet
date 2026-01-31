@@ -1,7 +1,7 @@
 [package]
 name = "ygglet-clap"
-version.workspace = true
-edition.workspace = true
+version = "0.1.0"
+edition = "2021"
 authors = [
     "Ben Leadbetter ben.leadbetter@hotmail.com",
 ]
@@ -10,4 +10,4 @@ authors = [
 crate-type = ["cdylib"]
 
 [dependencies]
-clap-sys.workspace = true
+clap-sys = "0.5.0"
