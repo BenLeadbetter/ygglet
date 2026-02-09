@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 ygglet-build = "ygglet_build.cli:main"
+ygglet = "ygglet_build.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ygglet_build"]
