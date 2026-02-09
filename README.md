@@ -4,7 +4,7 @@
 
 ## Building
 
-You'll need Python 3.12+, Rust and CMake 4.0.0+ installed.
+You'll need Python 3.12+, Rust, a C++ compiler and CMake 4.0.0+ installed.
 Once you've got those:
 
 ```bash
