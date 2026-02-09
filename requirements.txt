@@ -1,2 +1,4 @@
 conan~=2.24.0
 pre-commit~=4.3.0
+
+./tools/build/

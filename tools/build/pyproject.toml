@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ygglet-build"
+version = "0.1.0"
+description = "Build tool for ygglet"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+]
+
+[project.scripts]
+ygglet-build = "ygglet_build.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ygglet_build"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "RUF",    # ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ygglet_build"]
